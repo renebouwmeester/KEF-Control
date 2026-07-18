@@ -653,6 +653,13 @@ final class SpeakerModel: ObservableObject {
         } else {
             detail = streamQuality
         }
+        // Spotify reports no numbers at all — its only quality signal is the
+        // `spotifyHifi` flag, which is ABSENT (not false) on the High tier.
+        // So for Spotify, and only Spotify, no detail means not-lossless
+        // rather than unknown.
+        if detail == nil, streamingService.lowercased() == "spotify" {
+            detail = "Lossy"
+        }
         guard let detail else { return nil }
         guard let source = sourceLabel else { return detail }
         return "\(source): \(detail)"
