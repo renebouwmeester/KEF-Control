@@ -788,7 +788,7 @@ final class SpeakerModel: ObservableObject {
         }
     }
 
-    /// e.g. "Roon: 96 kHz / 24-bit", or "Spotify: Lossless" where the source
+    /// e.g. "Roon · 96 kHz / 24-bit", or "Spotify · Lossless" where the source
     /// reports a quality flag instead of numbers.
     var audioFormatText: String? {
         var detail: String?
@@ -813,7 +813,7 @@ final class SpeakerModel: ObservableObject {
         }
         guard let detail else { return nil }
         guard let source = sourceLabel else { return detail }
-        return "\(source): \(detail)"
+        return "\(source) · \(detail)"
     }
 
 

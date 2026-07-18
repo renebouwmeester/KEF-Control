@@ -11,7 +11,7 @@ background helper.
 - Volume, mute and transport, with a scrubbable progress bar
 - Now playing: title, artist, album and cover art
 - **Audio format** of the incoming stream, read from the speaker itself —
-  e.g. `Roon: 96 kHz / 24-bit`, `Spotify: Lossless`, `Tidal: 44.1 kHz / 16-bit`
+  e.g. `Roon · 96 kHz / 24-bit`, `Spotify · Lossless`, `Tidal · 44.1 kHz / 16-bit`
 - Input switching: Wi-Fi, TV, Optical, Coaxial, Analog, USB, Bluetooth —
   reorderable, and you can hide the ones your model doesn't have
 - **EQ profile switching**, applied through the speaker's authenticated DSP
@@ -113,6 +113,8 @@ defaults delete <bundle-id>
 - **Audio format is only reported for streaming sources.** Physical inputs (TV,
   optical, coaxial, analog) return no format information at all, so the caption
   is hidden for them — the speaker genuinely does not expose it.
+- **Spotify reports no numbers**, only a lossless flag, so it shows
+  `Spotify · Lossless` or `Spotify · Lossy` rather than a rate and depth.
 - **Seek** only works where the source advertises it. Roon RAAT does not: the
   speaker is a slave renderer there and rejects the command.
 - The app polls the speaker every 2 seconds while the panel is open.
