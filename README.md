@@ -35,8 +35,26 @@ work; reports welcome.
 
 ## Install
 
-Build it yourself — this takes about a minute and avoids the Gatekeeper
-warnings that come with downloaded binaries:
+### Download
+
+Grab the latest zip from [Releases](../../releases), unzip it, and drag
+**KEF Control.app** to `/Applications`.
+
+The app is ad-hoc signed but **not notarized** (that needs a paid Apple
+Developer account), so macOS quarantines it on download and claims it is
+"damaged". It isn't — clear the flag once:
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/KEF Control.app"
+```
+
+Then open it normally. Each release lists a SHA-256 you can check with
+`shasum -a 256 KEF-Control-<version>.zip`.
+
+### Or build from source
+
+A minute's work, and it sidesteps the quarantine entirely — locally built
+binaries are never quarantined:
 
 ```sh
 git clone https://github.com/<you>/kef-control.git
@@ -50,15 +68,6 @@ binary, and installs to `~/Applications/KEF Control.app`. Xcode Command Line
 Tools are the only prerequisite: `xcode-select --install`.
 
 To launch it at login, add it in System Settings → General → Login Items.
-
-### If you downloaded a release instead
-
-Binaries attached to GitHub releases are ad-hoc signed, not notarized, so macOS
-quarantines them and reports the app as "damaged". Clear the flag:
-
-```sh
-xattr -dr com.apple.quarantine "/Applications/KEF Control.app"
-```
 
 ## First run
 
