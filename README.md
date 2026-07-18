@@ -1,0 +1,117 @@
+# KEF Control
+
+A small macOS menu bar app for KEF wireless speakers. It talks directly to the
+speaker over your local network — no cloud account, no bridge process, no
+background helper.
+
+![menu bar app](docs/panel.png)
+
+## What it does
+
+- Volume, mute and transport, with a scrubbable progress bar
+- Now playing: title, artist, album and cover art
+- **Audio format** of the incoming stream, read from the speaker itself —
+  e.g. `Roon: 96 kHz / 24-bit`, `Spotify: Lossless`, `Tidal: 44.1 kHz / 16-bit`
+- Input switching: Wi-Fi, TV, Optical, Coaxial, Analog, USB, Bluetooth —
+  reorderable, and you can hide the ones your model doesn't have
+- **EQ profile switching**, applied through the speaker's authenticated DSP
+  channel
+- **Radio presets**: up to 7 internet radio stations as one-click buttons,
+  picked from the stations your speaker already knows
+- Seven volume presets, and global hotkeys for everything (unassigned by
+  default)
+
+Everything is optional — rows stay hidden until you configure them.
+
+## Requirements
+
+- macOS 26 or later (Apple silicon or Intel; the build is universal)
+- A KEF speaker on the W2 streaming platform: **LS50 Wireless II**, **LS60
+  Wireless**, or **LSX II / LSX II LT**
+- The speaker reachable on your LAN by IP address
+
+Only the LS60 has been tested. Other W2 models share the same API and should
+work; reports welcome.
+
+## Install
+
+Build it yourself — this takes about a minute and avoids the Gatekeeper
+warnings that come with downloaded binaries:
+
+```sh
+git clone https://github.com/<you>/kef-control.git
+cd kef-control
+./build.sh
+open -a "KEF Control"
+```
+
+`build.sh` compiles with `swiftc` (no Xcode project needed), makes a universal
+binary, and installs to `~/Applications/KEF Control.app`. Xcode Command Line
+Tools are the only prerequisite: `xcode-select --install`.
+
+To launch it at login, add it in System Settings → General → Login Items.
+
+### If you downloaded a release instead
+
+Binaries attached to GitHub releases are ad-hoc signed, not notarized, so macOS
+quarantines them and reports the app as "damaged". Clear the flag:
+
+```sh
+xattr -dr com.apple.quarantine "/Applications/KEF Control.app"
+```
+
+## First run
+
+The app starts with no speaker configured. **Right-click the menu bar icon →
+Speaker IP Address…** and enter your speaker's address (find it in the KEF
+Connect app, or in your router's client list). A static DHCP lease is worth
+setting up so it doesn't move.
+
+The right-click menu also has:
+
+- **Hotkeys & Volume Presets…** — global shortcuts and the seven volume presets
+- **Radio Presets…** — assign stations to the quick-play row
+- **Re-order Source Icons…** — reorder and hide inputs
+
+### Radio presets
+
+Stations are offered from the speaker's own airable radio **history and
+favourites**, so play a station once in KEF Connect and it will appear in the
+picker. Presets are stored locally by this app; nothing is written back to your
+airable account.
+
+## Settings
+
+Preferences live in `UserDefaults` under the app's bundle id, outside the
+bundle — reinstalling or rebuilding never loses them. To start clean:
+
+```sh
+defaults delete <bundle-id>
+```
+
+## Notes and limitations
+
+- **EQ profiles** are read from the speaker and re-applied through its
+  authenticated channel (TLS, HMAC-signed). Only the *active* profile is
+  readable locally; the app snapshots each one as you select it in KEF Connect,
+  so profiles appear in the menu after you've used them once.
+- **Audio format is only reported for streaming sources.** Physical inputs (TV,
+  optical, coaxial, analog) return no format information at all, so the caption
+  is hidden for them — the speaker genuinely does not expose it.
+- **Seek** only works where the source advertises it. Roon RAAT does not: the
+  speaker is a slave renderer there and rejects the command.
+- The app polls the speaker every 2 seconds while the panel is open.
+
+## Credits
+
+The authenticated DSP channel and the internet-radio playback sequence were
+both worked out from [hilli/go-kef-w2](https://github.com/hilli/go-kef-w2)
+(MIT), which is the best reference for this API. No code was copied — both were
+reimplemented in Swift — but the project saved a great deal of guesswork.
+
+Not affiliated with, endorsed by, or supported by KEF or GP Acoustics. The
+Bluetooth figure mark is a trademark of Bluetooth SIG, Inc.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).

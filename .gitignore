@@ -1,0 +1,7 @@
+# build.sh installs straight to ~/Applications and builds via a temp dir,
+# so there is nothing to ignore in-tree — these are just the usual suspects.
+.DS_Store
+*.app/
+build/
+dist/
+*.zip
