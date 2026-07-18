@@ -28,6 +28,10 @@
 		<true/>
 	</dict>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>KEF Control talks to your KEF speakers over the local network.</string>
+	<string>KEF Control finds and controls your KEF speakers on your local network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_kef-info._tcp</string>
+	</array>
 </dict>
 </plist>

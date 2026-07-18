@@ -20,6 +20,8 @@ background helper.
   picked from the stations your speaker already knows
 - Seven volume presets, and global hotkeys for everything (unassigned by
   default)
+- **Automatic discovery** of speakers on your network over Bonjour — no IP
+  hunting on first run
 
 Everything is optional — rows stay hidden until you configure them.
 
@@ -28,7 +30,7 @@ Everything is optional — rows stay hidden until you configure them.
 - macOS 26 or later (Apple silicon or Intel; the build is universal)
 - A KEF speaker on the W2 streaming platform: **LS50 Wireless II**, **LS60
   Wireless**, or **LSX II / LSX II LT**
-- The speaker reachable on your LAN by IP address
+- The speaker on the same LAN (it is found automatically over Bonjour)
 
 Only the LS60 has been tested. Other W2 models share the same API and should
 work; reports welcome.
@@ -57,8 +59,8 @@ A minute's work, and it sidesteps the quarantine entirely — locally built
 binaries are never quarantined:
 
 ```sh
-git clone https://github.com/<you>/kef-control.git
-cd kef-control
+git clone https://github.com/renebouwmeester/KEF-Control.git
+cd KEF-Control
 ./build.sh
 open -a "KEF Control"
 ```
@@ -71,10 +73,14 @@ To launch it at login, add it in System Settings → General → Login Items.
 
 ## First run
 
-The app starts with no speaker configured. **Right-click the menu bar icon →
-Speaker IP Address…** and enter your speaker's address (find it in the KEF
-Connect app, or in your router's client list). A static DHCP lease is worth
-setting up so it doesn't move.
+**Usually nothing to do.** KEF speakers advertise themselves over Bonjour
+(`_kef-info._tcp`), so on first launch the app looks for one and adopts it
+automatically if it finds exactly one.
+
+If you have several speakers — or none is found — **right-click the menu bar
+icon → Speaker IP Address…**, which lists everything discovered on the network
+by name and model ("KEF LS60 — LS60 Wireless"). You can also type an address
+by hand; a static DHCP lease is worth setting up so it doesn't move.
 
 The right-click menu also has:
 

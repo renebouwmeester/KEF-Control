@@ -220,6 +220,136 @@ final class KEFAuthChannel: NSObject, URLSessionDelegate {
     }
 }
 
+// MARK: - Bonjour discovery
+
+/// Finds KEF speakers on the LAN. They advertise `_kef-info._tcp` with a TXT
+/// record carrying the friendly name, model, serial and firmware — so a found
+/// speaker can be shown as "KEF LS60 — LS60 Wireless (192.168.1.69)" rather
+/// than a bare address.
+///
+/// Bonjour goes through mDNSResponder, so unlike raw SSDP/multicast this needs
+/// no multicast entitlement. Uses NetService rather than NWBrowser: NWBrowser
+/// gives no address of its own, and the documented way to get one — opening an
+/// NWConnection to the endpoint just to read its path — never completed inside
+/// an app bundle here (it hung in .preparing indefinitely). NetService asks
+/// mDNSResponder for the addresses directly, with no connection at all.
+/// Deprecated but functional, and the deprecation has no replacement that
+/// returns addresses.
+@MainActor
+final class SpeakerDiscovery: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
+    struct Found: Identifiable, Equatable {
+        var id: String { serviceName }
+        let serviceName: String       // "8417151A0041@LS60W"
+        let name: String              // "KEF LS60"
+        let model: String             // "LS60 Wireless"
+        let ip: String                // "192.168.1.69"
+
+        var label: String {
+            let m = model.isEmpty || model == name ? "" : " — \(model)"
+            return "\(name)\(m) (\(ip))"
+        }
+    }
+
+    @Published private(set) var found: [Found] = []
+    @Published private(set) var isSearching = false
+
+    static let serviceType = "_kef-info._tcp"
+
+    private var browser: NetServiceBrowser?
+    /// Services must be retained while they resolve or the callback never fires.
+    private var pending: [NetService] = []
+
+    func start() {
+        guard browser == nil else { return }
+        isSearching = true
+        let b = NetServiceBrowser()
+        b.delegate = self
+        b.searchForServices(ofType: Self.serviceType, inDomain: "local.")
+        browser = b
+    }
+
+    func stop() {
+        browser?.stop()
+        browser = nil
+        pending.forEach { $0.stop() }
+        pending.removeAll()
+        isSearching = false
+    }
+
+    // MARK: NetServiceBrowserDelegate
+
+    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser,
+                                       didFind service: NetService,
+                                       moreComing: Bool) {
+        Task { @MainActor in
+            guard !self.found.contains(where: { $0.serviceName == service.name }),
+                  !self.pending.contains(service) else { return }
+            service.delegate = self
+            self.pending.append(service)
+            service.resolve(withTimeout: 6)
+        }
+    }
+
+    nonisolated func netServiceBrowser(_ browser: NetServiceBrowser,
+                                       didRemove service: NetService,
+                                       moreComing: Bool) {
+        Task { @MainActor in
+            self.found.removeAll { $0.serviceName == service.name }
+        }
+    }
+
+    // MARK: NetServiceDelegate
+
+    nonisolated func netServiceDidResolveAddress(_ sender: NetService) {
+        let ip = Self.firstIPv4(in: sender.addresses ?? [])
+        let txt = Self.parseTXT(sender.txtRecordData())
+        Task { @MainActor in
+            self.pending.removeAll { $0 === sender }
+            guard let ip, !self.found.contains(where: { $0.serviceName == sender.name })
+            else { return }
+            self.found.append(Found(serviceName: sender.name,
+                                    name: txt["name"] ?? sender.name,
+                                    model: txt["modelName"] ?? "",
+                                    ip: ip))
+            self.found.sort { $0.name < $1.name }
+        }
+    }
+
+    nonisolated func netService(_ sender: NetService,
+                                didNotResolve errorDict: [String: NSNumber]) {
+        Task { @MainActor in self.pending.removeAll { $0 === sender } }
+    }
+
+    // MARK: helpers
+
+    /// Bonjour hands back both families; only IPv4 goes into a URL cleanly
+    /// (a link-local IPv6 needs brackets and a scope id).
+    private nonisolated static func firstIPv4(in addresses: [Data]) -> String? {
+        for data in addresses {
+            let ip: String? = data.withUnsafeBytes { raw in
+                guard let sa = raw.baseAddress?.assumingMemoryBound(to: sockaddr.self),
+                      sa.pointee.sa_family == UInt8(AF_INET) else { return nil }
+                var addr = raw.baseAddress!.assumingMemoryBound(to: sockaddr_in.self).pointee.sin_addr
+                var buf = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+                guard inet_ntop(AF_INET, &addr, &buf, socklen_t(INET_ADDRSTRLEN)) != nil
+                else { return nil }
+                return String(cString: buf)
+            }
+            if let ip { return ip }
+        }
+        return nil
+    }
+
+    private nonisolated static func parseTXT(_ data: Data?) -> [String: String] {
+        guard let data else { return [:] }
+        var out: [String: String] = [:]
+        for (k, v) in NetService.dictionary(fromTXTRecord: data) {
+            out[k] = String(data: v, encoding: .utf8)
+        }
+        return out
+    }
+}
+
 // MARK: - Observable speaker state
 
 struct EQProfileRef: Identifiable {
@@ -515,6 +645,27 @@ final class SpeakerModel: ObservableObject {
     /// False until the user has entered a speaker address.
     var isConfigured: Bool { !api.ip.isEmpty }
 
+    /// Shared with the Speaker IP dialog, so opening it shows whatever the
+    /// first-run search already turned up.
+    let discovery = SpeakerDiscovery()
+    private var discoverySink: AnyCancellable?
+
+    /// Adopt a discovered speaker automatically, but only when there is exactly
+    /// one and the user has not chosen one — picking for them among several
+    /// would be guessing at which room they meant.
+    private func autoDiscover() {
+        discovery.start()
+        discoverySink = discovery.$found
+            .receive(on: RunLoop.main)
+            .sink { [weak self] list in
+                guard let self, !self.isConfigured, list.count == 1,
+                      let only = list.first else { return }
+                self.setSpeakerIP(only.ip)
+                self.discovery.stop()
+                self.discoverySink = nil
+            }
+    }
+
     /// Point the app at a different speaker; persists and rebuilds the API clients.
     func setSpeakerIP(_ ip: String) {
         let trimmed = ip.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -690,6 +841,9 @@ final class SpeakerModel: ObservableObject {
         api = KEFAPI(ip: ip)
         auth = KEFAuthChannel(ip: ip)
         loadEqStore()
+        // Nothing configured yet: look for a speaker on the network and adopt
+        // it if exactly one turns up, so the common case needs no setup at all.
+        if ip.isEmpty { autoDiscover() }
         Task { await pollLoop() }
         // advance the progress line between polls
         Task {
@@ -2354,17 +2508,72 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func editSpeakerIP() {
         let alert = NSAlert()
         alert.messageText = "Speaker IP Address"
-        alert.informativeText = "Enter the IP address or hostname of your KEF speaker."
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
+        alert.informativeText = "Pick a speaker found on your network, "
+            + "or enter an address by hand."
+
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 300, height: 25))
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
         field.stringValue = model.speakerIP
         field.placeholderString = "192.168.1.x"
-        alert.accessoryView = field
+
+        // Choosing a speaker just fills the field, so the address stays
+        // visible and editable before saving.
+        let fill = FillFieldFromPopup(field: field, model: model)
+        popup.target = fill
+        popup.action = #selector(FillFieldFromPopup.picked(_:))
+        popupFiller = fill
+
+        func reload() {
+            let found = model.discovery.found
+            let selected = popup.indexOfSelectedItem
+            popup.removeAllItems()
+            popup.addItem(withTitle: found.isEmpty
+                          ? (model.discovery.isSearching ? "Searching…" : "No speakers found")
+                          : "Select a speaker…")
+            for f in found { popup.addItem(withTitle: f.label) }
+            popup.isEnabled = !found.isEmpty
+            if selected > 0, selected < popup.numberOfItems { popup.selectItem(at: selected) }
+        }
+        reload()
+        model.discovery.start()
+        // Results arrive on the main queue, which NSAlert's modal loop still
+        // services, so the list fills in while the sheet is open.
+        let sink = model.discovery.$found.receive(on: RunLoop.main).sink { _ in reload() }
+
+        let stack = NSStackView(views: [popup, field])
+        stack.orientation = .vertical
+        stack.alignment = .leading
+        stack.spacing = 10
+        stack.frame = NSRect(origin: .zero, size: stack.fittingSize)
+        alert.accessoryView = stack
+
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Cancel")
         NSApp.activate(ignoringOtherApps: true)
         alert.window.initialFirstResponder = field
-        if alert.runModal() == .alertFirstButtonReturn {
+        let response = alert.runModal()
+        sink.cancel()
+        popupFiller = nil
+        model.discovery.stop()
+        if response == .alertFirstButtonReturn {
             model.setSpeakerIP(field.stringValue)
+        }
+    }
+
+    /// NSPopUpButton needs an ObjC target; kept alive for the sheet's lifetime.
+    private var popupFiller: FillFieldFromPopup?
+
+    @MainActor
+    final class FillFieldFromPopup: NSObject {
+        private let field: NSTextField
+        private let model: SpeakerModel
+        init(field: NSTextField, model: SpeakerModel) {
+            self.field = field; self.model = model
+        }
+        @objc func picked(_ sender: NSPopUpButton) {
+            let i = sender.indexOfSelectedItem - 1      // -1 for the header row
+            guard model.discovery.found.indices.contains(i) else { return }
+            field.stringValue = model.discovery.found[i].ip
         }
     }
 
