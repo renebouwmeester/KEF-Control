@@ -348,10 +348,25 @@ struct PlayerScreen: View {
             // Hug the slider on whichever side the number sits.
             .frame(minWidth: 30, alignment: volumeNumberLeft ? .leading : .trailing)
             // Lights up while the finger is on the slider — the readout is
-            // the whole point of the drag.
-            .foregroundStyle(model.isDraggingVolume ? AnyShapeStyle(.white)
-                                                    : AnyShapeStyle(.secondary))
-            .animation(.easeOut(duration: 0.15), value: model.isDraggingVolume)
+            // the whole point of the drag. Timer-driven rather than bound to
+            // isDraggingVolume directly: the end-of-drag event proved
+            // unreliable, and the decay doubles as a pleasant linger.
+            .foregroundStyle(volumeGlow ? AnyShapeStyle(.white)
+                                        : AnyShapeStyle(.secondary))
+            .animation(.easeOut(duration: 0.3), value: volumeGlow)
+    }
+
+    @State private var volumeGlow = false
+    @State private var glowTask: Task<Void, Never>?
+
+    /// Keep the glow alive, then let it decay after the given quiet period.
+    private func touchGlow(decay: Int) {
+        volumeGlow = true
+        glowTask?.cancel()
+        glowTask = Task {
+            try? await Task.sleep(for: .milliseconds(decay))
+            if !Task.isCancelled { volumeGlow = false }
+        }
     }
 
     private var volumeSlider: some View {
@@ -386,6 +401,15 @@ struct PlayerScreen: View {
         // value also changes from polls, hotkeys and the Mac app.
         .sensoryFeedback(trigger: model.displayedVolume) { _, _ in
             model.isDraggingVolume ? .selection : nil
+        }
+        // Each touch or step refreshes the glow; it decays ~0.6s after the
+        // last activity, so it always returns to gray even if the slider's
+        // end-of-drag callback goes missing.
+        .onChange(of: model.isDraggingVolume) { _, dragging in
+            if dragging { touchGlow(decay: 1200) } else { touchGlow(decay: 500) }
+        }
+        .onChange(of: model.displayedVolume) { _, _ in
+            if model.isDraggingVolume { touchGlow(decay: 600) }
         }
     }
 
