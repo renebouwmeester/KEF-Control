@@ -368,7 +368,7 @@ struct PlayerScreen: View {
     /// The quick row with its closing chevron, sitting where the source bar
     /// was — the chevron mirrors the one that opened it.
     private var quickOverlay: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             quickRow
             Button {
                 withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = false }
@@ -389,24 +389,7 @@ struct PlayerScreen: View {
     private var quickRow: some View {
         Group {
             if !availableSets.isEmpty {
-                HStack(spacing: 10) {
-                    if let next = nextSet {
-                        Button {
-                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
-                                quickSetRaw = next.rawValue
-                            }
-                        } label: {
-                            Image(systemName: next.icon)
-                                // The circled glyph draws at the same
-                                // diameter as the preset circles beside it.
-                                .font(.system(size: Self.presetDiameter, weight: .thin))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                                .contentTransition(.symbolEffect(.replace))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                HStack(spacing: 8) {
                     ZStack {
                         switch currentSet {
                         case .presets:
@@ -419,6 +402,23 @@ struct PlayerScreen: View {
                     }
                     .frame(maxWidth: .infinity)
                     .clipped()
+                    if let next = nextSet {
+                        Button {
+                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
+                                quickSetRaw = next.rawValue
+                            }
+                        } label: {
+                            Image(systemName: next.icon)
+                                // The circled glyph draws at the same
+                                // diameter as the preset circles beside it.
+                                .font(.system(size: Self.presetDiameter, weight: .thin))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 40, height: 44)
+                                .contentShape(Rectangle())
+                                .contentTransition(.symbolEffect(.replace))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
                 .frame(height: 44)
             }
@@ -430,7 +430,7 @@ struct PlayerScreen: View {
     /// Numbered circles firing a GET at the slot's URL — stateless, so the
     /// only feedback is the haptic.
     private var webhookContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 9) {
             ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
                     Button {
@@ -459,7 +459,7 @@ struct PlayerScreen: View {
     private static let presetDiameter: CGFloat = 36
 
     private var presetContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 9) {
             // The row holds 6 on iOS; later slots set on the Mac keep their
             // values, they just don't render here.
             ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
@@ -489,7 +489,7 @@ struct PlayerScreen: View {
     }
 
     private var radioContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 9) {
             ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
