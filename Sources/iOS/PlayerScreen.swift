@@ -110,22 +110,27 @@ struct PlayerScreen: View {
                 }
                 .padding(.horizontal, margin)
             }
-            // Floating Liquid Glass control bar; the quick row morphs inside
-            // the same capsule, so the screen above never moves.
-            Group {
+            // Liquid Glass proper: three glass islands that the quick row
+            // swallows — the sources island morphs into the full capsule
+            // (shared glassEffectID) while the outer islands dissolve.
+            GlassEffectContainer(spacing: 18) {
                 if quickRowVisible {
                     quickOverlay
-                        .transition(.blurReplace)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
+                        .glassEffect(.regular.interactive())
+                        .glassEffectID("sources", in: glassNS)
                 } else {
-                    bottomBar
-                        .transition(.blurReplace)
+                    HStack(spacing: 10) {
+                        glassGroup(id: "lead") { leadGroup }
+                        Spacer(minLength: 6)
+                        glassGroup(id: "sources") { sourceGroup }
+                        Spacer(minLength: 6)
+                        glassGroup(id: "trail") { trailGroup }
+                    }
+                    .sensoryFeedback(.selection, trigger: model.source)
                 }
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 7)
-            // Interactive Liquid Glass: the capsule shimmers and flexes
-            // under touch instead of sitting inert.
-            .glassEffect(.regular.interactive())
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
         }
@@ -632,41 +637,49 @@ struct PlayerScreen: View {
         }
     }
 
-    /// Right-handed: power · settings ··· sources ··· EQ · chevron.
-    /// Left-handed, mirrored: chevron · EQ ··· sources ··· settings · power.
-    /// The chevron and EQ ride the thumb's side; sources keep their order.
-    private var bottomBar: some View {
+    @Namespace private var glassNS
+
+    private func glassGroup(id: String, @ViewBuilder content: () -> some View) -> some View {
+        content()
+            .padding(.horizontal, 8)
+            .padding(.vertical, 7)
+            .glassEffect(.regular.interactive())
+            .glassEffectID(id, in: glassNS)
+    }
+
+    /// Right-handed: [power · settings] [sources] [EQ · chevron];
+    /// left-handed mirrored. Sources keep their order either way.
+    @ViewBuilder private var leadGroup: some View {
         HStack(spacing: 0) {
             if leftHanded {
                 openChevron
-                if !model.currentEqName.isEmpty {
-                    eqMenu
-                        .padding(.leading, 5)
-                }
+                if !model.currentEqName.isEmpty { eqMenu }
             } else {
                 powerButton
                 settingsButton
             }
-            Spacer(minLength: 12)
+        }
+    }
+
+    private var sourceGroup: some View {
+        HStack(spacing: 0) {
             // Cap at four even if Mac-synced settings enable more.
             ForEach(Array(model.visibleSources.prefix(4)), id: \.id) { src in
                 sourceButton(src)
             }
-            Spacer(minLength: 12)
+        }
+    }
+
+    @ViewBuilder private var trailGroup: some View {
+        HStack(spacing: 0) {
             if leftHanded {
                 settingsButton
                 powerButton
             } else {
-                if !model.currentEqName.isEmpty {
-                    eqMenu
-                        // A whisker of air toward the chevron; the flexible
-                        // spacers keep the sources centred between the groups.
-                        .padding(.trailing, 5)
-                }
+                if !model.currentEqName.isEmpty { eqMenu }
                 openChevron
             }
         }
-        .sensoryFeedback(.selection, trigger: model.source)
     }
 
     private func sourceButton(_ src: SpeakerModel.Source) -> some View {
