@@ -263,6 +263,10 @@ struct SourceOrderInline: View {
         .listStyle(.plain)
         .scrollDisabled(true)
         .scrollContentBackground(.hidden)
+        // Pin the metrics so the fixed frame's row math holds exactly —
+        // stray content margins clipped the last row (USB) out of view.
+        .environment(\.defaultMinListRowHeight, 44)
+        .contentMargins(.vertical, 0, for: .scrollContent)
         .environment(\.editMode, .constant(.active))
     }
 
