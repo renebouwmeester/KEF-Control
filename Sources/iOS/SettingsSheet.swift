@@ -226,13 +226,27 @@ struct SettingsSheet: View {
 
     private var webhookSection: some View {
         Section {
+            // A numbered circle like the quick-row buttons, with the URL
+            // field flowing left-aligned beside it — trailing-aligned
+            // LabeledContent made filled rows read as a floating number
+            // over a right-shoved URL.
             ForEach(0..<6, id: \.self) { i in
-                LabeledContent("\(i + 1)") {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(session.webhookValues[i].isEmpty
+                                      ? Color.white.opacity(0.06)
+                                      : Color.white.opacity(0.14))
+                        Text("\(i + 1)")
+                            .font(.footnote.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(session.webhookValues[i].isEmpty
+                                             ? .tertiary : .secondary)
+                    }
+                    .frame(width: 26, height: 26)
                     TextField("https://…", text: $session.webhookValues[i])
+                        .font(.callout)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .multilineTextAlignment(.trailing)
                         .lineLimit(1)
                 }
             }
