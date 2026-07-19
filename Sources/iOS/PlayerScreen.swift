@@ -43,11 +43,14 @@ struct PlayerScreen: View {
                 Group {
                     metadata
                         .padding(.top, 10)
+                    // Slack on both sides of the controls block, so it floats
+                    // between the metadata and the quick row instead of
+                    // hugging the metadata.
+                    Spacer(minLength: 18)
                     transport
-                        .padding(.top, 4)
                     volumeRow
-                        .padding(.top, 4)
-                    Spacer(minLength: 12)
+                        .padding(.top, 14)
+                    Spacer(minLength: 14)
                     quickRow
                         .padding(.bottom, 18)
                 }
