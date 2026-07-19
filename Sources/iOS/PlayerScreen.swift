@@ -367,7 +367,7 @@ struct PlayerScreen: View {
 
     /// Circle diameter shared by volume and radio presets, and by the
     /// picker icons that flip between the two sets.
-    private static let presetDiameter: CGFloat = 40
+    private static let presetDiameter: CGFloat = 36
 
     private var presetContent: some View {
         HStack(spacing: 12) {
