@@ -322,11 +322,12 @@ struct PlayerView: View {
     /// directly from three small icons (the phone cycles instead).
     private enum QuickSet: String, CaseIterable {
         case presets, webhooks, radio
+        /// The same circled icons the iOS switcher uses.
         var icon: String {
             switch self {
-            case .presets:  return "speaker.wave.2"
-            case .webhooks: return "link"
-            case .radio:    return "music.microphone"
+            case .presets:  return "speaker.wave.2.circle"
+            case .webhooks: return "link.circle"
+            case .radio:    return "music.microphone.circle"
             }
         }
         var help: String {
@@ -354,27 +355,13 @@ struct PlayerView: View {
         return chosen
     }
 
-    /// Mode icons at the leading edge, the active set's content beside them.
-    /// The picker column is hidden when only one set exists.
+    /// The active set's content, with the mode icons at the TRAILING edge —
+    /// the chevron that opened this row lives right there, so the mouse is
+    /// already in place. Circled glyphs like the iOS switcher; the picker
+    /// hides when only one set exists.
     @ViewBuilder private var quickRow: some View {
         if !availableSets.isEmpty {
             HStack(spacing: 10) {
-                if availableSets.count > 1 {
-                    HStack(spacing: 6) {
-                        ForEach(availableSets, id: \.self) { set in
-                            Button { model.quickRowSet = set.rawValue } label: {
-                                Image(systemName: set.icon)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
-                                                                       : AnyShapeStyle(.tertiary))
-                                    .frame(width: 16, height: 22)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help(set.help)
-                        }
-                    }
-                }
                 ZStack {
                     switch currentSet {
                     case .presets:  presetRow
@@ -383,6 +370,22 @@ struct PlayerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                if availableSets.count > 1 {
+                    HStack(spacing: 4) {
+                        ForEach(availableSets, id: \.self) { set in
+                            Button { model.quickRowSet = set.rawValue } label: {
+                                Image(systemName: set.icon)
+                                    .font(.system(size: 20, weight: .thin))
+                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
+                                                                       : AnyShapeStyle(.tertiary))
+                                    .frame(width: 24, height: 30)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(set.help)
+                        }
+                    }
+                }
             }
         }
     }
