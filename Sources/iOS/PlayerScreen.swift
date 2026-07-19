@@ -15,6 +15,11 @@ struct PlayerScreen: View {
     /// you use.
     @AppStorage("BottomRowShowsRadio") private var showsRadio = false
 
+    /// The quick row is hidden until summoned by the chevron in the source
+    /// bar — the Mac panel's presets pattern, phone-sized. Persisted: leaving
+    /// it open is a choice, not the layout's.
+    @AppStorage("QuickRowVisible") private var quickRowVisible = false
+
     private let margin: CGFloat = 24
 
     var body: some View {
@@ -51,8 +56,11 @@ struct PlayerScreen: View {
                         .padding(.top, 14)
                     Spacer(minLength: 14)
                         .frame(maxHeight: 24)
-                    quickRow
-                        .padding(.bottom, 18)
+                    if quickRowVisible {
+                        quickRow
+                            .padding(.bottom, 18)
+                            .transition(.opacity)
+                    }
                 }
                 .padding(.horizontal, margin)
             }
@@ -386,6 +394,19 @@ struct PlayerScreen: View {
 
     private var bottomBar: some View {
         HStack(spacing: 0) {
+            if !model.volumePresets.isEmpty || model.hasRadioSlots {
+                Button {
+                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible.toggle() }
+                } label: {
+                    Image(systemName: quickRowVisible ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 28, height: 44)
+                        .contentShape(Rectangle())
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .buttonStyle(.plain)
+            }
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)
             }
