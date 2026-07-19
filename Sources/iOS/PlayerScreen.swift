@@ -234,25 +234,25 @@ struct PlayerScreen: View {
     @State private var nextTap = 0
 
     private var transport: some View {
-        HStack(spacing: 28) {
+        HStack(spacing: 32) {
             Button { prevTap += 1; model.control("previous") } label: {
                 Image(systemName: "backward.end.fill")
-                    .font(.title2)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 28))
+                    .frame(width: 52, height: 52)
                     .contentShape(Rectangle())
                     .symbolEffect(.bounce, value: prevTap)
             }
             Button { model.control("pause") } label: {
                 Image(systemName: model.displayedIsPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 60))
-                    .frame(width: 70, height: 70)
+                    .font(.system(size: 68))
+                    .frame(width: 78, height: 78)
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
             }
             Button { nextTap += 1; model.control("next") } label: {
                 Image(systemName: "forward.end.fill")
-                    .font(.title2)
-                    .frame(width: 44, height: 44)
+                    .font(.system(size: 28))
+                    .frame(width: 52, height: 52)
                     .contentShape(Rectangle())
                     .symbolEffect(.bounce, value: nextTap)
             }
