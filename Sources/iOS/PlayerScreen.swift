@@ -89,7 +89,9 @@ struct PlayerScreen: View {
                 // margins (16pt), same 29pt corner radius. The progress bar
                 // floats free underneath.
                 artworkHero
-                    .frame(width: geo.size.width - 32, height: geo.size.width - 32)
+                    // Same width (and edge spacing) as the progress bar.
+                    .frame(width: geo.size.width - 32 - 29,
+                           height: geo.size.width - 32 - 29)
                     // Tuned so island-bottom -> artwork visually matches the
                     // island's own gap to the screen top.
                     .padding(.top, 10)
