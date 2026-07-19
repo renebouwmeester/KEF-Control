@@ -78,9 +78,14 @@ final class SettingsSession: ObservableObject {
         model.showVolumeInMenuBar = showVolumeInMenuBar
         model.setSourceLayout(order: sourceRows.map(\.id),
                               hidden: Set(sourceRows.filter { !$0.visible }.map(\.id)))
-        model.setRadioSlots(radioSelection.map { path in
-            stations.first { $0.path == path }
-        })
+        // Only write the slots once the station list actually loaded — saving
+        // before that (airable browsing can take ~20s) matched every path
+        // against an empty list and silently wiped all slots.
+        if stationsLoaded {
+            model.setRadioSlots(radioSelection.map { path in
+                stations.first { $0.path == path }
+            })
+        }
         model.setSpeakerIP(ipText)
     }
 }
