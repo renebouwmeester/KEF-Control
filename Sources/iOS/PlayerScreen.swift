@@ -402,16 +402,22 @@ struct PlayerScreen: View {
             if !model.eqProfiles.isEmpty { Divider() }
             Button("Re-capture current") { model.recaptureCurrentProfile() }
         } label: {
-            HStack(spacing: 4) {
+            HStack(spacing: 5) {
                 Image(systemName: "slider.horizontal.3")
+                    .font(.system(size: 17, weight: .medium))
                 Text(model.currentEqName)
+                    .font(.subheadline)
                     .lineLimit(1)
+                    .truncationMode(.tail)
             }
-            .font(.footnote)
+            // Match the source icons exactly; buttonStyle(.plain) below keeps
+            // the menu's default tint from recolouring the label.
             .foregroundStyle(.secondary)
             .frame(height: 44)
-            .frame(maxWidth: 110, alignment: .trailing)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     private var powerButton: some View {
