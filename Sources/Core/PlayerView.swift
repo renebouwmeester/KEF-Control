@@ -169,10 +169,12 @@ struct PlayerView: View {
             // Centred between the timestamps, independent of their widths.
             if let format = model.audioFormatText, model.showsKEFStream {
                 Text(format)
-                    .font(.caption2.weight(.medium))
+                    // A notch under caption2 — full size overpowered the
+                    // compact card.
+                    .font(.system(size: 9.5, weight: .medium))
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2.5)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
                     .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 1))
             }
         }
