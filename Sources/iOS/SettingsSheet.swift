@@ -166,11 +166,10 @@ struct SettingsSheet: View {
             // and a pushed screen was an extra step. The inner List scopes
             // the smooth reordering to just these rows.
             SourceOrderInline(session: session)
-                // Sized with deliberate overshoot: the real row stride
-                // proved unmeasurable by dead reckoning (44/46/49 all
-                // clipped), and surplus height is invisible — nothing draws
-                // below the last row, so it reads as card padding.
-                .frame(height: CGFloat(session.sourceRows.count) * 52 + 8)
+                // Stride triangulated on device at ~49.6pt (49 clipped a
+                // sliver, 52+8 overshot by half a row); 50 lands within a
+                // couple of points and the tiny surplus reads as padding.
+                .frame(height: CGFloat(session.sourceRows.count) * 50)
                 .listRowInsets(EdgeInsets())
         } header: {
             Text("Sources")
