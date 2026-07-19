@@ -125,7 +125,7 @@ struct PlayerScreen: View {
             .padding(.vertical, 7)
             .glassEffect()
             .padding(.horizontal, 16)
-            .padding(.bottom, 18)
+            .padding(.bottom, 24)
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
