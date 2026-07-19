@@ -291,17 +291,17 @@ struct PlayerScreen: View {
     /// was — the chevron mirrors the one that opened it.
     private var quickOverlay: some View {
         HStack(spacing: 10) {
+            quickRow
             Button {
                 withAnimation(.snappy(duration: 0.3)) { quickRowVisible = false }
             } label: {
                 Image(systemName: "chevron.down")
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 44)
+                    .frame(width: 32, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            quickRow
         }
         .padding(.top, 14).padding(.bottom, 6)
     }
@@ -420,21 +420,8 @@ struct PlayerScreen: View {
 
     private var bottomBar: some View {
         HStack(spacing: 0) {
-            if !model.volumePresets.isEmpty || model.hasRadioSlots {
-                Button {
-                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible = true }
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                // Air between the chevron and the first source icon — there
-                // is room to give now that EQ is icon-only.
-                Spacer(minLength: 4)
-            }
+            powerButton
+            Spacer(minLength: 4)
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)
             }
@@ -442,7 +429,18 @@ struct PlayerScreen: View {
             if !model.currentEqName.isEmpty {
                 eqMenu
             }
-            powerButton
+            if !model.volumePresets.isEmpty || model.hasRadioSlots {
+                Button {
+                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible = true }
+                } label: {
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 32, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(.top, 14).padding(.bottom, 6)
         .sensoryFeedback(.selection, trigger: model.source)
@@ -453,15 +451,15 @@ struct PlayerScreen: View {
         return Button { model.setSource(src.id) } label: {
             Group {
                 if let glyph = src.glyph, let img = templateGlyph(named: glyph,
-                                                                 size: CGSize(width: 15, height: 18)) {
+                                                                 size: CGSize(width: 17, height: 20)) {
                     Image(platformImage: img).renderingMode(.template)
                 } else {
                     Image(systemName: src.icon)
                 }
             }
-            .font(.system(size: 17, weight: .medium))
+            .font(.system(size: 20, weight: .medium))
             .foregroundStyle(selected ? AnyShapeStyle(Color.phoneAccent) : AnyShapeStyle(.secondary))
-            .frame(width: 40, height: 44)
+            .frame(width: 44, height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(selected ? Color.phoneAccent.opacity(0.18) : .clear)
@@ -494,9 +492,9 @@ struct PlayerScreen: View {
             // as the checkmark inside the menu. buttonStyle(.plain) keeps the
             // menu's default tint from recolouring it.
             Image(systemName: "slider.horizontal.3")
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(.secondary)
-                .frame(width: 40, height: 44)
+                .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -508,7 +506,7 @@ struct PlayerScreen: View {
     private var powerButton: some View {
         Button { model.togglePower() } label: {
             Image(systemName: "power")
-                .font(.system(size: 17, weight: .medium))
+                .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(model.isStandby ? AnyShapeStyle(.secondary)
                                                  : AnyShapeStyle(Color.phoneAccent))
                 .frame(width: 44, height: 44)
