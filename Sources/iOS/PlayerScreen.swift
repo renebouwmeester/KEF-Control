@@ -346,8 +346,10 @@ struct PlayerScreen: View {
     private var volumeNumber: some View {
         Text("\(model.displayedVolume)")
             .font(.subheadline.weight(.semibold).monospacedDigit())
-            // Hug the slider on whichever side the number sits.
-            .frame(minWidth: 30, alignment: leftHanded ? .trailing : .leading)
+            // Anchor the digits toward the slider so the width reservation's
+            // slack faces the screen edge, not the slider — it was inflating
+            // the number-to-slider gap past the speaker-side spacing.
+            .frame(minWidth: 30, alignment: leftHanded ? .leading : .trailing)
             // Lights up while the finger is on the slider — the readout is
             // the whole point of the drag. Timer-driven rather than bound to
             // isDraggingVolume directly: the end-of-drag event proved
