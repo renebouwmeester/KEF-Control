@@ -135,9 +135,7 @@ struct PlayerScreen: View {
                     .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
             }
-            // Skip the album when it just repeats the artist (self-titled
-            // records, some radio streams).
-            if let album = model.displayAlbum, album != model.displayArtist {
+            if let album = model.displayAlbum {
                 Text(album)
                     .font(.callout)
                     .foregroundStyle(.white.opacity(0.5))
