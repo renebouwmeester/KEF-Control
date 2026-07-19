@@ -56,11 +56,6 @@ struct PlayerScreen: View {
                         .padding(.top, 14)
                     Spacer(minLength: 14)
                         .frame(maxHeight: 24)
-                    if quickRowVisible {
-                        quickRow
-                            .padding(.bottom, 18)
-                            .transition(.opacity)
-                    }
                 }
                 .padding(.horizontal, margin)
             }
@@ -69,11 +64,22 @@ struct PlayerScreen: View {
             Rectangle()
                 .fill(.white.opacity(0.12))
                 .frame(height: 0.5)
-            bottomBar
-                .padding(.horizontal, margin)
-                // 23pt keeps the row low without the icons brushing the
-                // home-indicator swipe zone.
-                .padding(.bottom, 23)
+            // The quick row slides in OVER the source bar, so the screen
+            // above never moves — a temporary swap, not a layout change.
+            ZStack {
+                bottomBar
+                    .padding(.horizontal, margin)
+                    // 23pt keeps the row low without the icons brushing the
+                    // home-indicator swipe zone.
+                    .padding(.bottom, 23)
+                if quickRowVisible {
+                    quickOverlay
+                        .padding(.horizontal, margin)
+                        .padding(.bottom, 23)
+                        .background(.regularMaterial)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -280,6 +286,25 @@ struct PlayerScreen: View {
 
     // MARK: quick row — volume presets / radio stations, switchable
 
+    /// The quick row with its closing chevron, sitting where the source bar
+    /// was — the chevron mirrors the one that opened it.
+    private var quickOverlay: some View {
+        HStack(spacing: 10) {
+            Button {
+                withAnimation(.snappy(duration: 0.3)) { quickRowVisible = false }
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            quickRow
+        }
+        .padding(.vertical, 6)
+    }
+
     /// One row carries both quick-action sets, directly above the source bar.
     /// The leading button flips between them and always shows the icon of the
     /// set it would switch TO.
@@ -396,14 +421,13 @@ struct PlayerScreen: View {
         HStack(spacing: 0) {
             if !model.volumePresets.isEmpty || model.hasRadioSlots {
                 Button {
-                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible.toggle() }
+                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible = true }
                 } label: {
-                    Image(systemName: quickRowVisible ? "chevron.down" : "chevron.up")
+                    Image(systemName: "chevron.up")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(width: 28, height: 44)
                         .contentShape(Rectangle())
-                        .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.plain)
             }
