@@ -411,7 +411,7 @@ struct PlayerScreen: View {
             if dragging { touchGlow(decay: 1200) } else { touchGlow(decay: 700) }
         }
         .onChange(of: model.displayedVolume) { _, _ in
-            if model.isDraggingVolume { touchGlow(decay: 900) }
+            if model.isDraggingVolume { touchGlow(decay: 1200) }
         }
     }
 
