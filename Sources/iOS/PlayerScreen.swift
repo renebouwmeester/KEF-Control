@@ -105,10 +105,10 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .clipShape(RoundedRectangle(cornerRadius: model.displayedIsPlaying ? 0 : 20,
-                                    style: .continuous))
+        // Concentric with the display's own corners, echoing iOS 26 — the
+        // hard-cornered full bleed read as editorial rather than native.
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
-        // Only visible in the receded state — full bleed has no edges.
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
     }
