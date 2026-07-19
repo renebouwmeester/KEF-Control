@@ -42,6 +42,7 @@ struct PlayerScreen: View {
             } else {
                 artworkHero
                     .frame(width: geo.size.width, height: geo.size.width)
+                    .padding(.top, 8)
                 // Attached to the artwork's bottom edge, full width like the
                 // artwork itself.
                 scrubber
