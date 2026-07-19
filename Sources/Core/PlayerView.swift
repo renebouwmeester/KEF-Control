@@ -7,6 +7,9 @@ import Combine
 
 struct PlayerView: View {
     @ObservedObject var model: SpeakerModel
+    /// The Mac panel is a fixed 300pt card; the iOS shell passes the screen
+    /// width so the same layout renders as a full-bleed now-playing screen.
+    var cardWidth: CGFloat = PanelMetrics.width
     @ObservedObject private var artwork = ArtworkCache.shared
 
     var body: some View {
@@ -40,7 +43,7 @@ struct PlayerView: View {
             }
             .padding(14)
         }
-        .frame(width: PanelMetrics.width)
+        .frame(width: cardWidth)
         .background(model.panelColor)
         .clipShape(RoundedRectangle(cornerRadius: PanelMetrics.cornerRadius, style: .continuous))
         // The shadow lives here, not on the window, so it follows the card as
@@ -101,7 +104,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(width: 300, height: 300)
+        .frame(width: cardWidth, height: cardWidth)
         .clipped()
     }
 

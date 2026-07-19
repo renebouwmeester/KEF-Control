@@ -62,8 +62,11 @@ func templateGlyph(named name: String, size: CGSize) -> PlatformImage? {
     img.size = size
     return img
     #else
-    // UIImage has no settable point size; the view sizes it instead.
-    return UIImage(contentsOfFile: path)?.withRenderingMode(.alwaysTemplate)
+    // UIImage has no settable point size; bake the wanted size in via the
+    // scale factor instead (the view draws the image at pixels ÷ scale).
+    guard let ui = UIImage(contentsOfFile: path), let cg = ui.cgImage else { return nil }
+    return UIImage(cgImage: cg, scale: ui.size.width * ui.scale / size.width,
+                   orientation: .up).withRenderingMode(.alwaysTemplate)
     #endif
 }
 

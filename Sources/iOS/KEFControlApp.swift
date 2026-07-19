@@ -34,8 +34,11 @@ struct ContentView: View {
             model.panelColor.opacity(0.6)
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.6), value: model.panelColor)
-            PlayerView(model: model)
-                .padding(.top, 8)
+            // Full-bleed: the card is as wide as the screen, so the panel IS
+            // the app rather than a floating Mac-sized widget.
+            GeometryReader { geo in
+                PlayerView(model: model, cardWidth: geo.size.width)
+            }
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
