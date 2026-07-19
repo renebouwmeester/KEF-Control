@@ -47,8 +47,8 @@ struct PlayerScreen: View {
                     // between the metadata and the quick row instead of
                     // hugging the metadata.
                     Spacer(minLength: 18)
-                    transport
                     volumeRow
+                    transport
                         .padding(.top, 14)
                     Spacer(minLength: 14)
                     quickRow
@@ -243,8 +243,8 @@ struct PlayerScreen: View {
     private var volumeRow: some View {
         HStack(spacing: 12) {
             Image(systemName: "speaker.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             Slider(
                 value: Binding(
                     get: { Double(model.displayedVolume) },
@@ -254,14 +254,15 @@ struct PlayerScreen: View {
                                                                   model.effectiveMinVolume + 1)),
                 onEditingChanged: { model.isDraggingVolume = $0 }
             )
-            .tint(.white.opacity(0.85))
+            // Quieter than the scrubber: the volume sits above the transport
+            // as a supporting control, not the headline.
+            .tint(.white.opacity(0.5))
             Image(systemName: "speaker.wave.3.fill")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
             Text("\(model.displayedVolume)")
-                .font(.callout.weight(.semibold).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(minWidth: 28, alignment: .trailing)
+                .font(.footnote.weight(.semibold).monospacedDigit())
+                .frame(minWidth: 26, alignment: .trailing)
                 // The number doubles as the mute toggle: red when muted.
                 .foregroundStyle(model.displayedMuted ? .red : .secondary)
                 .onTapGesture { model.toggleMute() }
