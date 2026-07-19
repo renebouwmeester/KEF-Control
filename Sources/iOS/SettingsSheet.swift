@@ -231,7 +231,9 @@ struct SettingsSheet: View {
             // LabeledContent made filled rows read as a floating number
             // over a right-shoved URL.
             ForEach(0..<6, id: \.self) { i in
-                HStack(spacing: 12) {
+                // Top-aligned so the circle stays with the URL's first line
+                // when it wraps.
+                HStack(alignment: .top, spacing: 12) {
                     ZStack {
                         Circle().fill(session.webhookValues[i].isEmpty
                                       ? Color.white.opacity(0.06)
@@ -242,12 +244,13 @@ struct SettingsSheet: View {
                                              ? .tertiary : .secondary)
                     }
                     .frame(width: 26, height: 26)
-                    TextField("https://…", text: $session.webhookValues[i])
+                    TextField("https://…", text: $session.webhookValues[i],
+                              axis: .vertical)
                         .font(.callout)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .lineLimit(1)
+                        .lineLimit(1...4)
                 }
             }
         } header: {
