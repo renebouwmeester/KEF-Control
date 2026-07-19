@@ -82,8 +82,8 @@ struct SettingsSheet: View {
                 speakerSection
                 handednessSection
                 sourcesSection
-                radioSection
                 volumeSection
+                radioSection
                 webhookSection
             }
             .navigationTitle("Settings")

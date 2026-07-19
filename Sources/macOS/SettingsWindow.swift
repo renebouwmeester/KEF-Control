@@ -106,10 +106,10 @@ struct SettingsView: View {
                     .tabItem { Label("Speaker", systemImage: "hifispeaker.2") }
                 sourcesTab
                     .tabItem { Label("Sources", systemImage: "arrow.up.arrow.down") }
-                radioTab
-                    .tabItem { Label("Radio", systemImage: "radio") }
                 volumeTab
                     .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
+                radioTab
+                    .tabItem { Label("Radio", systemImage: "radio") }
                 webhooksTab
                     .tabItem { Label("Webhooks", systemImage: "link") }
                 hotkeysTab
