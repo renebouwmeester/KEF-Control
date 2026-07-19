@@ -52,7 +52,7 @@ struct PlayerScreen: View {
                 scrubber
                 Group {
                     metadata
-                        .padding(.top, 30)
+                        .padding(.top, 27)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
                     // Equal flexible space around the transport centres it
@@ -62,7 +62,7 @@ struct PlayerScreen: View {
                     Spacer(minLength: 16)
                     volumeRow
                     Spacer(minLength: 14)
-                        .frame(maxHeight: 24)
+                        .frame(maxHeight: 27)
                 }
                 .padding(.horizontal, margin)
             }
