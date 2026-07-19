@@ -11,6 +11,7 @@
 		320316FAB4B0B663B6EA94FD /* SpeakerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */; };
 		39F9A55E25BB1B5B331B0362 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28A9D34EAED61B1FBA39E7C /* Platform.swift */; };
 		52555DDCDF4AA69004FD96C2 /* KEFAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EC30DC5CC475CCC090B938 /* KEFAPI.swift */; };
+		86EDDFF4E14FE44C321CCBE9 /* PlayerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B811E52EEEC9262EED15FE /* PlayerScreen.swift */; };
 		94C3F6C66BE81F5C6F0ABE0D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 92048DB27F2888A7E78245D9 /* Assets.xcassets */; };
 		9910FF1BCC149FE4B0F52836 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBF9FD52E12AD5AA88C0A78 /* PlayerView.swift */; };
 		A4D37D8EF7EDBE944773A933 /* SpeakerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */; };
@@ -19,12 +20,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		01B811E52EEEC9262EED15FE /* PlayerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerScreen.swift; sourceTree = "<group>"; };
 		0F57FBC5ABF6B193211FD29C /* bluetooth-glyph.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bluetooth-glyph.png"; sourceTree = "<group>"; };
 		2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
 		3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerDiscovery.swift; sourceTree = "<group>"; };
 		70EC30DC5CC475CCC090B938 /* KEFAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KEFAPI.swift; sourceTree = "<group>"; };
 		7B70E10678C89DE55FFA6A67 /* KEFControlApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KEFControlApp.swift; sourceTree = "<group>"; };
-		8916FA44E0DDD046ED2DDF67 /* KEF Control.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "KEF Control.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		8916FA44E0DDD046ED2DDF67 /* KEFControl.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KEFControl.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		92048DB27F2888A7E78245D9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A238DA118E6F1C9C55C644FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerModel.swift; sourceTree = "<group>"; };
@@ -36,7 +38,7 @@
 		0E4B4E3E1694199220A3963E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8916FA44E0DDD046ED2DDF67 /* KEF Control.app */,
+				8916FA44E0DDD046ED2DDF67 /* KEFControl.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -56,6 +58,7 @@
 				92048DB27F2888A7E78245D9 /* Assets.xcassets */,
 				A238DA118E6F1C9C55C644FB /* Info.plist */,
 				7B70E10678C89DE55FFA6A67 /* KEFControlApp.swift */,
+				01B811E52EEEC9262EED15FE /* PlayerScreen.swift */,
 				2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */,
 			);
 			path = iOS;
@@ -100,7 +103,7 @@
 			packageProductDependencies = (
 			);
 			productName = KEFControl;
-			productReference = 8916FA44E0DDD046ED2DDF67 /* KEF Control.app */;
+			productReference = 8916FA44E0DDD046ED2DDF67 /* KEFControl.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -110,9 +113,10 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2700;
+				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					B5579FC1593FEE75BE2045E8 = {
+						DevelopmentTeam = XX742N7ZNY;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -156,6 +160,7 @@
 				52555DDCDF4AA69004FD96C2 /* KEFAPI.swift in Sources */,
 				B3D6170A710A08785AABAABE /* KEFControlApp.swift in Sources */,
 				39F9A55E25BB1B5B331B0362 /* Platform.swift in Sources */,
+				86EDDFF4E14FE44C321CCBE9 /* PlayerScreen.swift in Sources */,
 				9910FF1BCC149FE4B0F52836 /* PlayerView.swift in Sources */,
 				055B661EC4B04EBA591CE75D /* SettingsSheet.swift in Sources */,
 				320316FAB4B0B663B6EA94FD /* SpeakerDiscovery.swift in Sources */,
@@ -172,6 +177,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = XX742N7ZNY;
 				INFOPLIST_FILE = Sources/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -221,10 +227,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = XX742N7ZNY;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -244,7 +248,6 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -286,10 +289,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = XX742N7ZNY;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -302,7 +303,6 @@
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -315,6 +315,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = XX742N7ZNY;
 				INFOPLIST_FILE = Sources/iOS/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (

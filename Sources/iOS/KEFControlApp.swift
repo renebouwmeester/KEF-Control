@@ -29,27 +29,26 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // The card's tint fills the whole screen behind it, so the 300pt
-            // card reads as the app rather than a floating widget.
-            model.panelColor.opacity(0.6)
+            // Artwork-tinted wash fading toward black — the Apple Music
+            // full-player treatment, driven by the same dominant-hue tint the
+            // Mac panel uses.
+            LinearGradient(colors: [model.panelColor, Color(white: 0.04)],
+                           startPoint: .top, endPoint: .bottom)
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.6), value: model.panelColor)
-            // Full-bleed: the card is as wide as the screen, so the panel IS
-            // the app rather than a floating Mac-sized widget.
-            GeometryReader { geo in
-                PlayerView(model: model, cardWidth: geo.size.width)
-            }
+            PlayerScreen(model: model)
         }
-        .overlay(alignment: .bottomTrailing) {
+        .overlay(alignment: .topTrailing) {
             Button {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.title3)
+                    .font(.body)
                     .foregroundStyle(.secondary)
-                    .padding(16)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
+            .padding(.trailing, 8)
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(model: model)
