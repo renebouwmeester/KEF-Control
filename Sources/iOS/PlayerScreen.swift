@@ -7,6 +7,8 @@ import SwiftUI
 
 struct PlayerScreen: View {
     @ObservedObject var model: SpeakerModel
+    /// Opens the settings sheet — the sheet itself is owned by ContentView.
+    var openSettings: () -> Void = {}
     @ObservedObject private var artworkCache = PlayerView.ArtworkCache.shared
 
     @State private var scrubTarget: Double?   // finger position while scrubbing
@@ -105,12 +107,10 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        // Top corners concentric with the display, echoing iOS 26; bottom
-        // edge straight so the progress line attaches flush.
-        .clipShape(UnevenRoundedRectangle(
-            cornerRadii: .init(topLeading: 20, bottomLeading: 0,
-                               bottomTrailing: 0, topTrailing: 20),
-            style: .continuous))
+        // Square edges — rounding was tried twice (all corners, then top
+        // only) and rejected; only the paused recede keeps its card corners.
+        .clipShape(RoundedRectangle(cornerRadius: model.displayedIsPlaying ? 0 : 20,
+                                    style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
@@ -423,6 +423,14 @@ struct PlayerScreen: View {
     private var bottomBar: some View {
         HStack(spacing: 0) {
             powerButton
+            Button { openSettings() } label: {
+                Image(systemName: "gearshape.fill")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
             Spacer(minLength: 4)
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)

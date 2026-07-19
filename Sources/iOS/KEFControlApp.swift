@@ -37,23 +37,7 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             background
-            PlayerScreen(model: model)
-        }
-        .overlay(alignment: .topTrailing) {
-            Button {
-                showSettings = true
-            } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.subheadline)
-                    .foregroundStyle(.white.opacity(0.85))
-                    .frame(width: 34, height: 34)
-                    // Sits on the full-bleed artwork, so it needs its own
-                    // contrast.
-                    .glassEffect()
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .padding(.trailing, 8)
+            PlayerScreen(model: model, openSettings: { showSettings = true })
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(model: model)
