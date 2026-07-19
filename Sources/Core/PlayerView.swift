@@ -358,32 +358,38 @@ struct PlayerView: View {
         return chosen
     }
 
-    /// One circle diameter for the item buttons of all three sets AND the
-    /// mode-picker glyphs. Budget for the worst case, all in 272pt:
-    /// picker 3×26+2×2 + gap 6 + items 6×26+5×5 = 269.
-    private static let quickDiameter: CGFloat = 26
+    /// One circle diameter for the item buttons of all three sets and the
+    /// cycle glyph. Worst case in 272pt: icon 30 + gap 6 + 6×30+5×8 = 256.
+    private static let quickDiameter: CGFloat = 30
 
-    /// Mode icons at the LEADING edge, the active set's content beside them.
-    /// Circled glyphs like the iOS switcher; the picker hides when only one
-    /// set exists.
+    /// The set the cycle button would advance to; nil hides the button.
+    private var nextSet: QuickSet? {
+        let sets = availableSets
+        guard sets.count > 1, let i = sets.firstIndex(of: currentSet) else { return nil }
+        return sets[(i + 1) % sets.count]
+    }
+
+    /// One cycling icon at the leading edge, exactly like the iOS switcher:
+    /// it always shows the set it would switch TO. Hidden when only one set
+    /// exists.
     @ViewBuilder private var quickRow: some View {
         if !availableSets.isEmpty {
             HStack(spacing: 6) {
-                if availableSets.count > 1 {
-                    HStack(spacing: 2) {
-                        ForEach(availableSets, id: \.self) { set in
-                            Button { model.quickRowSet = set.rawValue } label: {
-                                Image(systemName: set.icon)
-                                    .font(.system(size: Self.quickDiameter, weight: .thin))
-                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
-                                                                       : AnyShapeStyle(.tertiary))
-                                    .frame(width: Self.quickDiameter, height: 30)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help(set.help)
+                if let next = nextSet {
+                    Button {
+                        withAnimation(.easeInOut(duration: PanelAnim.duration)) {
+                            model.quickRowSet = next.rawValue
                         }
+                    } label: {
+                        Image(systemName: next.icon)
+                            .font(.system(size: Self.quickDiameter, weight: .thin))
+                            .foregroundStyle(.secondary)
+                            .frame(width: Self.quickDiameter, height: Self.quickDiameter)
+                            .contentShape(Rectangle())
+                            .contentTransition(.symbolEffect(.replace))
                     }
+                    .buttonStyle(.plain)
+                    .help(next.help)
                 }
                 ZStack {
                     switch currentSet {
@@ -400,14 +406,14 @@ struct PlayerView: View {
     /// Numbered circles firing a GET at the slot's URL; the URL itself shows
     /// as the tooltip.
     private var webhookRow: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 8) {
             ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
                     Button { model.fireWebhook(i) } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.07))
                             Text("\(i + 1)")
-                                .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
                         .frame(width: Self.quickDiameter, height: Self.quickDiameter)
@@ -452,7 +458,7 @@ struct PlayerView: View {
     }
 
     private var presetRow: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 8) {
             // Circles like the webhook and radio buttons; 6 shown, like iOS.
             ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
@@ -551,7 +557,7 @@ struct PlayerView: View {
     /// row's rhythm. Hidden entirely when no slot is set, so the panel is
     /// unchanged for anyone not using it.
     private var radioContent: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: 8) {
             ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
@@ -576,7 +582,7 @@ struct PlayerView: View {
                 } else {
                     // Initials until the artwork arrives (or if it never does).
                     Text(Self.initials(station.title))
-                        .font(.system(size: 10))
+                        .font(.system(size: 11))
                         .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
                                                : AnyShapeStyle(.secondary))
                 }
