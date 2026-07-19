@@ -139,20 +139,23 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
-            // Stream format as a quiet bordered badge, like Apple Music's
-            // Lossless pill: "Roon · 96 kHz / 24-bit", "Spotify · Lossless".
-            if let format = model.audioFormatText, model.showsKEFStream {
-                Text(format)
-                    .font(.caption2.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2.5)
-                    .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 1))
-                    .padding(.top, 5)
-            }
         }
         .frame(maxWidth: .infinity)
         .multilineTextAlignment(.center)
+    }
+
+    /// Stream format as a quiet bordered badge, like Apple Music's Lossless
+    /// pill: "Roon · 96 kHz / 24-bit", "Spotify · Lossless". Centred between
+    /// the two timestamps under the progress line.
+    @ViewBuilder private var formatBadge: some View {
+        if let format = model.audioFormatText, model.showsKEFStream {
+            Text(format)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2.5)
+                .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 1))
+        }
     }
 
     // MARK: scrubber
@@ -182,15 +185,19 @@ struct PlayerScreen: View {
                 .gesture(scrubGesture(width: geo.size.width))
             }
             .frame(height: 8)
-            HStack {
-                Text(timeLabel(scrubTarget ?? model.displaySeek ?? 0))
-                Spacer()
-                if let length = model.displayLength {
-                    Text("-" + timeLabel(max(0, length - (scrubTarget ?? model.displaySeek ?? 0))))
+            ZStack {
+                HStack {
+                    Text(timeLabel(scrubTarget ?? model.displaySeek ?? 0))
+                    Spacer()
+                    if let length = model.displayLength {
+                        Text("-" + timeLabel(max(0, length - (scrubTarget ?? model.displaySeek ?? 0))))
+                    }
                 }
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.secondary)
+                // Centred between the timestamps, independent of their widths.
+                formatBadge
             }
-            .font(.caption2.monospacedDigit())
-            .foregroundStyle(.secondary)
             .padding(.horizontal, 10)
         }
         .opacity(model.displayLength == nil ? 0 : 1)
