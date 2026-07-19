@@ -176,8 +176,9 @@ struct SettingsSheet: View {
                 EditButton().font(.caption)
             }
         } footer: {
-            Text("Edit to reorder — the bar shows inputs in this order, "
-                 + "up to four.")
+            Text("Edit to reorder — the bar shows inputs in this order. "
+                 + "Up to four can be shown: with four selected the others "
+                 + "are greyed out until you switch one off.")
         }
     }
 
