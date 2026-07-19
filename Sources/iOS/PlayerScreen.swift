@@ -49,7 +49,7 @@ struct PlayerScreen: View {
                         .padding(.top, 4)
                     Spacer(minLength: 12)
                     quickRow
-                        .padding(.bottom, 6)
+                        .padding(.bottom, 18)
                 }
                 .padding(.horizontal, margin)
             }
