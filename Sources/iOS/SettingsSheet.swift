@@ -158,8 +158,8 @@ struct SettingsSheet: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                // 5 on iOS; later slots set on the Mac keep their values.
-                ForEach(0..<5, id: \.self) { i in
+                // 6 on iOS; a 7th slot set on the Mac keep their values.
+                ForEach(0..<6, id: \.self) { i in
                     Picker("Slot \(i + 1)", selection: $session.radioSelection[i]) {
                         Text("—").tag("")
                         ForEach(session.stations, id: \.path) { station in
@@ -179,8 +179,8 @@ struct SettingsSheet: View {
 
     private var volumeSection: some View {
         Section {
-            // 5 on iOS; later slots set on the Mac keep their values.
-            ForEach(0..<5, id: \.self) { i in
+            // 6 on iOS; a 7th slot set on the Mac keep their values.
+            ForEach(0..<6, id: \.self) { i in
                 LabeledContent("Preset \(i + 1)") {
                     TextField("—", text: $session.presetValues[i])
                         .keyboardType(.numberPad)

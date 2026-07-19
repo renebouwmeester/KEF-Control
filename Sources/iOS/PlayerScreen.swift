@@ -371,9 +371,9 @@ struct PlayerScreen: View {
 
     private var presetContent: some View {
         HStack(spacing: 12) {
-            // The row holds 5 on iOS; later slots set on the Mac keep their
+            // The row holds 6 on iOS; later slots set on the Mac keep their
             // values, they just don't render here.
-            ForEach(Array(model.volumePresets.prefix(5)), id: \.self) { preset in
+            ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
                 Button { model.setVolume(preset) } label: {
                     ZStack {
@@ -401,7 +401,7 @@ struct PlayerScreen: View {
 
     private var radioContent: some View {
         HStack(spacing: 12) {
-            ForEach(Array(model.radioSlots.prefix(5).enumerated()), id: \.offset) { i, slot in
+            ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
                 }
