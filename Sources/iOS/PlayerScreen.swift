@@ -347,7 +347,11 @@ struct PlayerScreen: View {
             .font(.subheadline.weight(.semibold).monospacedDigit())
             // Hug the slider on whichever side the number sits.
             .frame(minWidth: 30, alignment: volumeNumberLeft ? .leading : .trailing)
-            .foregroundStyle(.secondary)
+            // Lights up while the finger is on the slider — the readout is
+            // the whole point of the drag.
+            .foregroundStyle(model.isDraggingVolume ? AnyShapeStyle(.white)
+                                                    : AnyShapeStyle(.secondary))
+            .animation(.easeOut(duration: 0.15), value: model.isDraggingVolume)
     }
 
     private var volumeSlider: some View {
