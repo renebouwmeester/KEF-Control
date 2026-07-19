@@ -646,7 +646,8 @@ struct PlayerScreen: View {
                 settingsButton
             }
             Spacer(minLength: 12)
-            ForEach(model.visibleSources, id: \.id) { src in
+            // Cap at four even if Mac-synced settings enable more.
+            ForEach(Array(model.visibleSources.prefix(4)), id: \.id) { src in
                 sourceButton(src)
             }
             Spacer(minLength: 12)

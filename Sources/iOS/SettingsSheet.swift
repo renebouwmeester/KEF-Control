@@ -160,9 +160,13 @@ struct SettingsSheet: View {
     }
 
     private var sourcesSection: some View {
-        Section {
+        // The bottom bar is designed around four source icons; once four are
+        // on, the remaining off-toggles grey out until one is freed.
+        let visibleCount = session.sourceRows.filter(\.visible).count
+        return Section {
             ForEach($session.sourceRows) { $row in
                 Toggle(row.name, isOn: $row.visible)
+                    .disabled(!row.visible && visibleCount >= 4)
             }
             .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
         } header: {
@@ -172,7 +176,8 @@ struct SettingsSheet: View {
                 EditButton().font(.caption)
             }
         } footer: {
-            Text("Edit to reorder — the panel shows inputs in this order.")
+            Text("Edit to reorder — the bar shows inputs in this order, "
+                 + "up to four.")
         }
     }
 
