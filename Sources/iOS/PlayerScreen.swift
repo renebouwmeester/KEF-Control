@@ -408,10 +408,10 @@ struct PlayerScreen: View {
         // last activity, so it always returns to gray even if the slider's
         // end-of-drag callback goes missing.
         .onChange(of: model.isDraggingVolume) { _, dragging in
-            if dragging { touchGlow(decay: 1200) } else { touchGlow(decay: 700) }
+            if dragging { touchGlow(decay: 1400) } else { touchGlow(decay: 700) }
         }
         .onChange(of: model.displayedVolume) { _, _ in
-            if model.isDraggingVolume { touchGlow(decay: 1200) }
+            if model.isDraggingVolume { touchGlow(decay: 1400) }
         }
     }
 
