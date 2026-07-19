@@ -193,32 +193,40 @@ struct PlayerView: View {
 
     private var volumeRow: some View {
         HStack(alignment: .center, spacing: 10) {
-            // Mirrors the volume-presets chevron at the far right of this row:
-            // same glyph, same size, pointing at the row it opens. Only shown
-            // once stations are configured — otherwise it would toggle a row
-            // that has nothing in it.
-            if model.hasRadioSlots {
-                Button {
-                    withAnimation(.easeInOut(duration: PanelAnim.duration)) {
-                        model.showRadioRow.toggle()
+            // Chevron + speaker form one tight group mirroring the number +
+            // chevron group at the far right — same frames ([14][3][20] vs
+            // [20][3][14]), same 3pt gap — so the row reads symmetrically and
+            // the slider claims the freed width.
+            HStack(spacing: 3) {
+                // Mirrors the volume-presets chevron at the far right of this
+                // row: same glyph, same size, pointing at the row it opens.
+                // Only shown once stations are configured — otherwise it would
+                // toggle a row that has nothing in it.
+                if model.hasRadioSlots {
+                    Button {
+                        withAnimation(.easeInOut(duration: PanelAnim.duration)) {
+                            model.showRadioRow.toggle()
+                        }
+                    } label: {
+                        Image(systemName: model.showRadioRow ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 9, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 14, height: 20)
+                            .contentShape(Rectangle())
                     }
-                } label: {
-                    Image(systemName: model.showRadioRow ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 14, height: 20)
-                        .contentShape(Rectangle())
+                    .buttonStyle(.plain)
+                    .help(model.showRadioRow ? "Hide radio presets" : "Show radio presets")
+                }
+                Button { model.toggleMute() } label: {
+                    Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                        .font(.body)
+                        // Leading, as the mirror of the volume number's
+                        // trailing alignment: each hugs its chevron.
+                        .frame(width: 20, height: 20, alignment: .leading)
                 }
                 .buttonStyle(.plain)
-                .help(model.showRadioRow ? "Hide radio presets" : "Show radio presets")
+                .foregroundStyle(model.displayedMuted ? .red : .secondary)
             }
-            Button { model.toggleMute() } label: {
-                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.body)
-                    .frame(width: 20, height: 20, alignment: .center)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(model.displayedMuted ? .red : .secondary)
 
             Button { model.setVolume(max(model.effectiveMinVolume, model.displayedVolume - 1)) } label: {
                 Image(systemName: "minus")
