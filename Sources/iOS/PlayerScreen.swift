@@ -42,14 +42,12 @@ struct PlayerScreen: View {
                 statusView(icon: "power", title: "Standby", detail: nil)
                 Spacer()
             } else {
-                // Inset card over the blurred backdrop; the progress line
-                // below shares its width, forming the card's bottom edge.
-                let cardWidth = geo.size.width - margin * 2
+                // Full width, top corners rounded; the progress line below
+                // runs the same width, forming the straight bottom edge.
                 artworkHero
-                    .frame(width: cardWidth, height: cardWidth)
+                    .frame(width: geo.size.width, height: geo.size.width)
                     .padding(.top, 8)
                 scrubber
-                    .frame(width: cardWidth)
                 Group {
                     metadata
                         .padding(.top, 26)
@@ -203,7 +201,7 @@ struct PlayerScreen: View {
                 // Centred between the timestamps, independent of their widths.
                 formatBadge
             }
-            .padding(.horizontal, 4)
+            .padding(.horizontal, 10)
         }
         .opacity(model.displayLength == nil ? 0 : 1)
     }
