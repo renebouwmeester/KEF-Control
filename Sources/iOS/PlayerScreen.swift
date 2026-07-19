@@ -270,9 +270,17 @@ struct PlayerScreen: View {
 
     private var volumeRow: some View {
         HStack(spacing: 12) {
-            Image(systemName: "speaker.fill")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            // The left speaker icon IS the mute toggle.
+            Button { model.toggleMute() } label: {
+                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.fill")
+                    .font(.system(size: 15))
+                    .foregroundStyle(model.displayedMuted ? AnyShapeStyle(.red)
+                                                         : AnyShapeStyle(.secondary))
+                    .frame(width: 26, height: 26)
+                    .contentShape(Rectangle())
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(.plain)
             Slider(
                 value: Binding(
                     get: { Double(model.displayedVolume) },
@@ -286,14 +294,13 @@ struct PlayerScreen: View {
             // as a supporting control, not the headline.
             .tint(.white.opacity(0.5))
             Image(systemName: "speaker.wave.3.fill")
-                .font(.caption2)
+                .font(.system(size: 15))
                 .foregroundStyle(.tertiary)
+            // Promoted from a footnote afterthought to the row's readout.
             Text("\(model.displayedVolume)")
-                .font(.footnote.weight(.semibold).monospacedDigit())
-                .frame(minWidth: 26, alignment: .trailing)
-                // The number doubles as the mute toggle: red when muted.
-                .foregroundStyle(model.displayedMuted ? .red : .secondary)
-                .onTapGesture { model.toggleMute() }
+                .font(.subheadline.weight(.semibold).monospacedDigit())
+                .frame(minWidth: 30, alignment: .trailing)
+                .foregroundStyle(.white.opacity(0.9))
         }
         .disabled(model.volumeControlDisabled)
     }
