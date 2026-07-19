@@ -78,7 +78,7 @@ struct PlayerScreen: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .glassEffect()
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 16)
             .padding(.bottom, 18)
         }
         .frame(width: geo.size.width, height: geo.size.height)
@@ -435,15 +435,15 @@ struct PlayerScreen: View {
                 Image(systemName: "gearshape.fill")
                     .font(.system(size: 20, weight: .medium))
                     .foregroundStyle(.secondary)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 40, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            Spacer(minLength: 4)
+            Spacer(minLength: 12)
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: 12)
             if !model.currentEqName.isEmpty {
                 eqMenu
             }
@@ -454,7 +454,7 @@ struct PlayerScreen: View {
                     Image(systemName: "chevron.up")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 44)
+                        .frame(width: 28, height: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -476,7 +476,7 @@ struct PlayerScreen: View {
             }
             .font(.system(size: 20, weight: .medium))
             .foregroundStyle(selected ? AnyShapeStyle(Color.phoneAccent) : AnyShapeStyle(.secondary))
-            .frame(width: 44, height: 44)
+            .frame(width: 40, height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(selected ? Color.phoneAccent.opacity(0.18) : .clear)
@@ -511,7 +511,7 @@ struct PlayerScreen: View {
             Image(systemName: "slider.horizontal.3")
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(.secondary)
-                .frame(width: 44, height: 44)
+                .frame(width: 40, height: 44)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
