@@ -446,7 +446,9 @@ struct PlayerScreen: View {
 
     private var eqMenu: some View {
         Menu {
-            ForEach(model.eqProfiles) { profile in
+            ForEach(model.eqProfiles.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }) { profile in
                 Button {
                     model.applyEqProfile(profile)
                 } label: {
@@ -460,20 +462,14 @@ struct PlayerScreen: View {
             if !model.eqProfiles.isEmpty { Divider() }
             Button("Re-capture current") { model.recaptureCurrentProfile() }
         } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 17, weight: .medium))
-                Text(model.currentEqName)
-                    .font(.subheadline)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-            }
-            // Match the source icons exactly; buttonStyle(.plain) below keeps
-            // the menu's default tint from recolouring the label.
-            .foregroundStyle(.secondary)
-            .frame(height: 44)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .contentShape(Rectangle())
+            // Icon only, sized like a source button; the active profile shows
+            // as the checkmark inside the menu. buttonStyle(.plain) keeps the
+            // menu's default tint from recolouring it.
+            Image(systemName: "slider.horizontal.3")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 40, height: 44)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
