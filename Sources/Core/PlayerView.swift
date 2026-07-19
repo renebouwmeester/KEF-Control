@@ -39,10 +39,9 @@ struct PlayerView: View {
                     // Presets belong with the volume they set, so they expand
                     // directly under that row.
                     if model.showPresets {
-                        presetRow
+                        quickRow
                     }
                 }
-                radioRow
                 Divider()
                 bottomRow
             }
@@ -246,40 +245,15 @@ struct PlayerView: View {
 
     private var volumeRow: some View {
         HStack(alignment: .center, spacing: 10) {
-            // Chevron + speaker form one tight group mirroring the number +
-            // chevron group at the far right — same frames ([14][3][20] vs
-            // [20][3][14]), same 3pt gap — so the row reads symmetrically and
-            // the slider claims the freed width.
-            HStack(spacing: 3) {
-                // Mirrors the volume-presets chevron at the far right of this
-                // row: same glyph, same size, pointing at the row it opens.
-                // Only shown once stations are configured — otherwise it would
-                // toggle a row that has nothing in it.
-                if model.hasRadioSlots {
-                    Button {
-                        withAnimation(.easeInOut(duration: PanelAnim.duration)) {
-                            model.showRadioRow.toggle()
-                        }
-                    } label: {
-                        Image(systemName: model.showRadioRow ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 14, height: 20)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help(model.showRadioRow ? "Hide radio presets" : "Show radio presets")
-                }
-                Button { model.toggleMute() } label: {
-                    Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                        .font(.body)
-                        // Leading, as the mirror of the volume number's
-                        // trailing alignment: each hugs its chevron.
-                        .frame(width: 20, height: 20, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(model.displayedMuted ? .red : .secondary)
+            // The old radio chevron is gone — the single chevron at the far
+            // right now opens the one quick row (mode picked inside it).
+            Button { model.toggleMute() } label: {
+                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                    .font(.body)
+                    .frame(width: 20, height: 20, alignment: .leading)
             }
+            .buttonStyle(.plain)
+            .foregroundStyle(model.displayedMuted ? .red : .secondary)
 
             Button { model.setVolume(max(model.effectiveMinVolume, model.displayedVolume - 1)) } label: {
                 Image(systemName: "minus")
@@ -337,9 +311,104 @@ struct PlayerView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .help(model.showPresets ? "Hide volume presets" : "Show volume presets")
+            .help(model.showPresets ? "Hide quick actions" : "Show quick actions")
             .disabled(model.volumeControlDisabled)
         }
+    }
+
+    // MARK: quick row — volume presets / webhooks / radio, one row
+
+    /// The quick row's sets, in display order. On the Mac the pointer picks
+    /// directly from three small icons (the phone cycles instead).
+    private enum QuickSet: String, CaseIterable {
+        case presets, webhooks, radio
+        var icon: String {
+            switch self {
+            case .presets:  return "speaker.wave.2"
+            case .webhooks: return "link"
+            case .radio:    return "music.microphone"
+            }
+        }
+        var help: String {
+            switch self {
+            case .presets:  return "Volume presets"
+            case .webhooks: return "Webhooks"
+            case .radio:    return "Radio presets"
+            }
+        }
+    }
+
+    /// Sets that actually have content; empty ones don't get an icon.
+    private var availableSets: [QuickSet] {
+        var out: [QuickSet] = []
+        if !model.volumePresets.isEmpty { out.append(.presets) }
+        if model.hasWebhooks { out.append(.webhooks) }
+        if model.hasRadioSlots { out.append(.radio) }
+        return out
+    }
+
+    private var currentSet: QuickSet {
+        let sets = availableSets
+        guard let chosen = QuickSet(rawValue: model.quickRowSet), sets.contains(chosen)
+        else { return sets.first ?? .presets }
+        return chosen
+    }
+
+    /// Mode icons at the leading edge, the active set's content beside them.
+    /// The picker column is hidden when only one set exists.
+    @ViewBuilder private var quickRow: some View {
+        if !availableSets.isEmpty {
+            HStack(spacing: 10) {
+                if availableSets.count > 1 {
+                    HStack(spacing: 6) {
+                        ForEach(availableSets, id: \.self) { set in
+                            Button { model.quickRowSet = set.rawValue } label: {
+                                Image(systemName: set.icon)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
+                                                                       : AnyShapeStyle(.tertiary))
+                                    .frame(width: 16, height: 22)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(set.help)
+                        }
+                    }
+                }
+                ZStack {
+                    switch currentSet {
+                    case .presets:  presetRow
+                    case .webhooks: webhookRow
+                    case .radio:    radioContent
+                    }
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    /// Numbered circles firing a GET at the slot's URL; the URL itself shows
+    /// as the tooltip.
+    private var webhookRow: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
+                if !url.isEmpty {
+                    Button { model.fireWebhook(i) } label: {
+                        ZStack {
+                            Circle().fill(Color.white.opacity(0.07))
+                            Text("\(i + 1)")
+                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: 30, height: 30)
+                        .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(url)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private var bottomRow: some View {
@@ -465,21 +534,15 @@ struct PlayerView: View {
     /// Up to five radio stations, as artwork circles matching the volume-preset
     /// row's rhythm. Hidden entirely when no slot is set, so the panel is
     /// unchanged for anyone not using it.
-    @ViewBuilder private var radioRow: some View {
-        if model.hasRadioSlots && model.showRadioRow {
-            // Fixed spacing, centred as a group: a full row of 7 lands
-            // symmetrically edge to edge (7×30 + 6×10 = 270 of 272), and a
-            // partial row stays a tight cluster in the middle rather than
-            // spreading to the corners.
-            HStack(spacing: 10) {
-                ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
-                    if let station = slot {
-                        radioButton(i, station)
-                    }
+    private var radioContent: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
+                if let station = slot {
+                    radioButton(i, station)
                 }
             }
-            .frame(maxWidth: .infinity)
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {

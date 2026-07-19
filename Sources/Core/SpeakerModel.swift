@@ -181,6 +181,13 @@ final class SpeakerModel: ObservableObject {
 
     var hasWebhooks: Bool { webhookSlots.contains { !$0.isEmpty } }
 
+    /// Which quick-row set the Mac panel shows ("presets"/"webhooks"/"radio").
+    /// Same key the iOS shell uses via @AppStorage — identical semantics.
+    @Published var quickRowSet: String =
+        UserDefaults.standard.string(forKey: "QuickRowSet") ?? "presets" {
+        didSet { UserDefaults.standard.set(quickRowSet, forKey: "QuickRowSet") }
+    }
+
     /// Fire-and-forget GET — same semantics as KEF Audio's webhook button.
     func fireWebhook(_ index: Int) {
         guard webhookSlots.indices.contains(index),

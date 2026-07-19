@@ -34,6 +34,7 @@ final class SettingsSession: ObservableObject {
     @Published var volumeStep: String
     @Published var showVolumeInMenuBar: Bool
     @Published var radioSelection: [String]      // station path, "" = empty
+    @Published var webhookValues: [String]       // GET URLs, "" = empty
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -55,6 +56,7 @@ final class SettingsSession: ObservableObject {
         volumeStep = String(ShortcutStore.volumeStep)
         showVolumeInMenuBar = model.showVolumeInMenuBar
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
+        webhookValues = model.webhookSlots
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -86,6 +88,7 @@ final class SettingsSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
+        model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -107,6 +110,8 @@ struct SettingsView: View {
                     .tabItem { Label("Radio", systemImage: "radio") }
                 volumeTab
                     .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
+                webhooksTab
+                    .tabItem { Label("Webhooks", systemImage: "link") }
                 hotkeysTab
                     .tabItem { Label("Hotkeys", systemImage: "keyboard") }
             }
@@ -232,6 +237,24 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .task { if !session.stationsLoaded { await session.loadStations() } }
+    }
+
+    private var webhooksTab: some View {
+        Form {
+            Section {
+                ForEach(0..<6, id: \.self) { i in
+                    LabeledContent("\(i + 1)") {
+                        TextField("", text: $session.webhookValues[i],
+                                  prompt: Text("https://…"))
+                            .labelsHidden()
+                    }
+                }
+            } footer: {
+                Text("Each slot appears as a numbered button in the quick row "
+                     + "and fires a GET request at its URL.")
+            }
+        }
+        .formStyle(.grouped)
     }
 
     private var volumeTab: some View {
