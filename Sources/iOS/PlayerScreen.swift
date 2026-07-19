@@ -76,21 +76,25 @@ struct PlayerScreen: View {
 
     // MARK: metadata
 
+    /// "Artist · Album" on one line; either alone when the other is missing.
+    private var artistAlbumLine: String? {
+        switch (model.displayArtist, model.displayAlbum) {
+        case (nil, nil): return nil
+        case let (artist?, nil): return artist
+        case let (nil, album?): return album
+        case let (artist?, album?): return album == artist ? artist : "\(artist) · \(album)"
+        }
+    }
+
     private var metadata: some View {
         VStack(spacing: 3) {
             Text(model.displayTitle)
                 .font(.title3.weight(.semibold))
                 .lineLimit(1)
-            if let artist = model.displayArtist {
-                Text(artist)
+            if let line = artistAlbumLine {
+                Text(line)
                     .font(.body)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
-            if let album = model.displayAlbum {
-                Text(album)
-                    .font(.footnote)
-                    .foregroundStyle(.tertiary)
                     .lineLimit(1)
             }
             // Stream format as a quiet bordered badge, like Apple Music's
