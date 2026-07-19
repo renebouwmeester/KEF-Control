@@ -53,10 +53,12 @@ struct PlayerScreen: View {
                         .padding(.top, 26)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
-                    Spacer(minLength: 18)
+                    // Equal flexible space around the transport centres it
+                    // between the format capsule and the volume slider.
+                    Spacer(minLength: 16)
                     transport
+                    Spacer(minLength: 16)
                     volumeRow
-                        .padding(.top, 14)
                     Spacer(minLength: 14)
                         .frame(maxHeight: 24)
                 }
