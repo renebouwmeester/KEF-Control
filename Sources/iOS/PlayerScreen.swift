@@ -450,7 +450,7 @@ struct PlayerScreen: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .sensoryFeedback(.impact(weight: .light), trigger: webhookFires)
     }
 
@@ -482,7 +482,7 @@ struct PlayerScreen: View {
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .light), trigger: model.displayedVolume)
         .disabled(model.volumeControlDisabled)
@@ -496,7 +496,7 @@ struct PlayerScreen: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
