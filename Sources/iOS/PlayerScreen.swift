@@ -259,18 +259,10 @@ struct PlayerScreen: View {
             Image(systemName: "speaker.fill")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
-            Slider(
-                value: Binding(
-                    get: { Double(model.displayedVolume) },
-                    set: { model.setVolume(Int($0)) }
-                ),
-                in: Double(model.effectiveMinVolume)...Double(max(model.effectiveMaxVolume,
-                                                                  model.effectiveMinVolume + 1)),
-                onEditingChanged: { model.isDraggingVolume = $0 }
-            )
-            // Quieter than the scrubber: the volume sits above the transport
-            // as a supporting control, not the headline.
-            .tint(.white.opacity(0.5))
+            // Custom slider: the system one has a fixed fat track and a 27pt
+            // thumb with no API to slim them. 4pt capsule + 14pt knob, same
+            // quiet palette as the scrubber.
+            volumeSlider
             Image(systemName: "speaker.wave.3.fill")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
@@ -282,6 +274,34 @@ struct PlayerScreen: View {
                 .onTapGesture { model.toggleMute() }
         }
         .disabled(model.volumeControlDisabled)
+    }
+
+    private var volumeSlider: some View {
+        GeometryReader { geo in
+            let range = Double(max(1, model.effectiveMaxVolume - model.effectiveMinVolume))
+            let frac = (Double(model.displayedVolume) - Double(model.effectiveMinVolume)) / range
+            ZStack(alignment: .leading) {
+                Capsule().fill(.white.opacity(0.2))
+                    .frame(height: 4)
+                Capsule().fill(.white.opacity(0.5))
+                    .frame(width: max(4, geo.size.width * frac), height: 4)
+                Circle().fill(.white.opacity(0.9))
+                    .frame(width: 14, height: 14)
+                    .offset(x: (geo.size.width - 14) * frac)
+            }
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle().inset(by: -10))
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        model.isDraggingVolume = true
+                        let f = min(1, max(0, value.location.x / geo.size.width))
+                        model.setVolume(model.effectiveMinVolume + Int((f * range).rounded()))
+                    }
+                    .onEnded { _ in model.isDraggingVolume = false }
+            )
+        }
+        .frame(height: 20)
     }
 
     // MARK: quick row — volume presets / radio stations, switchable
