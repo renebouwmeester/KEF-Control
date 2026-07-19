@@ -49,7 +49,7 @@ struct PlayerView: View {
             .padding(14)
         }
         .frame(width: cardWidth)
-        .background(model.panelColor)
+        .background(cardBackground)
         .clipShape(RoundedRectangle(cornerRadius: PanelMetrics.cornerRadius, style: .continuous))
         // The shadow lives here, not on the window, so it follows the card as
         // SwiftUI animates its height.
@@ -61,6 +61,27 @@ struct PlayerView: View {
         // to get wrong.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .animation(.easeInOut(duration: 0.6), value: model.panelColor)
+    }
+
+    /// A heavily blurred, saturated copy of the artwork behind the card's
+    /// content — the same treatment as the iOS app's backdrop. The dominant
+    /// tint stays as base coat and no-artwork fallback; the dark overlay
+    /// keeps the thin white text legible. Invisible behind the opaque
+    /// artwork itself, so it effectively colours the lower half of the card.
+    private var cardBackground: some View {
+        ZStack {
+            model.panelColor
+            if let art = model.artwork {
+                Image(platformImage: art)
+                    .resizable()
+                    .scaledToFill()
+                    .saturation(1.5)
+                    // Overscan so the blur never shows darkened edges.
+                    .scaleEffect(1.4)
+                    .blur(radius: 60)
+                    .overlay(Color.black.opacity(0.45))
+            }
+        }
     }
 
     /// Doubles as the first-run screen: with no address saved there is nothing
@@ -177,15 +198,17 @@ struct PlayerView: View {
 
     private var metadataView: some View {
         VStack(spacing: 3) {
+            // 100 / 75 / 50 white — the same ramp as the iOS app.
             Text(model.displayTitle)
                 .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
                 .multilineTextAlignment(.center)
                 .lineLimit(5)
                 .fixedSize(horizontal: false, vertical: true)
             if let artist = model.displayArtist {
                 Text(artist)
                     .font(.body)
-                    .foregroundStyle(Color(white: 0.8))
+                    .foregroundStyle(.white.opacity(0.75))
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -193,7 +216,7 @@ struct PlayerView: View {
             if let album = model.displayAlbum {
                 Text(album)
                     .font(.callout)
-                    .foregroundStyle(Color(white: 0.65))
+                    .foregroundStyle(.white.opacity(0.5))
                     .multilineTextAlignment(.center)
                     .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
@@ -369,7 +392,9 @@ struct PlayerView: View {
 
     private func eqMenu(maxWidth: CGFloat) -> some View {
         Menu {
-            ForEach(model.eqProfiles) { profile in
+            ForEach(model.eqProfiles.sorted {
+                $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
+            }) { profile in
                 Button {
                     model.applyEqProfile(profile)
                 } label: {
