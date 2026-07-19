@@ -302,7 +302,7 @@ struct PlayerScreen: View {
             .buttonStyle(.plain)
             quickRow
         }
-        .padding(.vertical, 6)
+        .padding(.top, 14).padding(.bottom, 6)
     }
 
     /// One row carries both quick-action sets, directly above the source bar.
@@ -443,7 +443,7 @@ struct PlayerScreen: View {
             }
             powerButton
         }
-        .padding(.vertical, 6)
+        .padding(.top, 14).padding(.bottom, 6)
         .sensoryFeedback(.selection, trigger: model.source)
     }
 
