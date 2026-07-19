@@ -38,6 +38,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rene.kef-control-lite
         PRODUCT_NAME: KEF Control
+        DEVELOPMENT_TEAM: XX742N7ZNY
         TARGETED_DEVICE_FAMILY: "1"
         # Same language mode the Mac build gets from plain swiftc.
         SWIFT_VERSION: "5.0"
