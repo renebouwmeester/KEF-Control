@@ -206,32 +206,32 @@ struct PlayerScreen: View {
 
     // MARK: transport
 
+    /// Same styling as the Mac panel: backward/forward.end.fill at .title2,
+    /// circled play/pause at 38, 28pt gaps, tight centred cluster — just with
+    /// iOS-sized touch targets around the glyphs.
     private var transport: some View {
-        HStack {
-            Spacer()
+        HStack(spacing: 28) {
             Button { model.control("previous") } label: {
-                Image(systemName: "backward.fill")
-                    .font(.system(size: 30))
-                    .frame(width: 64, height: 64)
+                Image(systemName: "backward.end.fill")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
-            Spacer()
             Button { model.control("pause") } label: {
-                Image(systemName: model.displayedIsPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 44))
-                    .frame(width: 72, height: 72)
+                Image(systemName: model.displayedIsPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.system(size: 38))
+                    .frame(width: 56, height: 56)
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
             }
-            Spacer()
             Button { model.control("next") } label: {
-                Image(systemName: "forward.fill")
-                    .font(.system(size: 30))
-                    .frame(width: 64, height: 64)
+                Image(systemName: "forward.end.fill")
+                    .font(.title2)
+                    .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
-            Spacer()
         }
+        .frame(maxWidth: .infinity)
         .buttonStyle(.plain)
         .foregroundStyle(.white)
         .disabled(model.transportDisabled)
