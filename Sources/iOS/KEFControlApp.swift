@@ -43,8 +43,12 @@ struct ContentView: View {
                 showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
+                    .font(.subheadline)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .frame(width: 34, height: 34)
+                    // Sits on the full-bleed artwork, so it needs its own
+                    // contrast.
+                    .background(.ultraThinMaterial, in: Circle())
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }

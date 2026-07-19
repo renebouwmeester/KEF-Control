@@ -31,29 +31,37 @@ struct PlayerScreen: View {
                 statusView(icon: "power", title: "Standby", detail: nil)
                 Spacer()
             } else {
-                Spacer(minLength: 8)
-                artworkCard
-                Spacer(minLength: 20)
-                metadata
-                scrubber
-                    .padding(.top, 16)
-                transport
-                    .padding(.top, 4)
-                volumeRow
-                    .padding(.top, 4)
-                Spacer(minLength: 12)
-                quickRow
-                    .padding(.bottom, 6)
+                artworkHero
+                Group {
+                    metadata
+                        .padding(.top, 18)
+                    scrubber
+                        .padding(.top, 14)
+                    transport
+                        .padding(.top, 4)
+                    volumeRow
+                        .padding(.top, 4)
+                    Spacer(minLength: 12)
+                    quickRow
+                        .padding(.bottom, 6)
+                }
+                .padding(.horizontal, margin)
             }
             bottomBar
+                .padding(.horizontal, margin)
         }
-        .padding(.horizontal, margin)
+        // The artwork runs under the status bar / Dynamic Island; everything
+        // below keeps its margins.
+        .ignoresSafeArea(edges: .top)
         .sensoryFeedback(.impact(weight: .light), trigger: model.isPlaying)
     }
 
     // MARK: artwork
 
-    private var artworkCard: some View {
+    /// Edge-to-edge while playing, anchored at the top under the Dynamic
+    /// Island; recedes into a rounded inset card when paused, so the state
+    /// change is unmissable.
+    private var artworkHero: some View {
         ZStack {
             if let art = model.artwork {
                 Image(platformImage: art)
@@ -67,10 +75,11 @@ struct PlayerScreen: View {
             }
         }
         .aspectRatio(1, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
-        // Paused artwork recedes — the Apple Music gesture vocabulary.
+        .clipShape(RoundedRectangle(cornerRadius: model.displayedIsPlaying ? 0 : 20,
+                                    style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
+        // Only visible in the receded state — full bleed has no edges.
+        .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
     }
 
@@ -87,7 +96,7 @@ struct PlayerScreen: View {
     }
 
     private var metadata: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 7) {
             Text(model.displayTitle)
                 .font(.title3.weight(.semibold))
                 .lineLimit(1)
@@ -106,7 +115,7 @@ struct PlayerScreen: View {
                     .padding(.horizontal, 7)
                     .padding(.vertical, 2.5)
                     .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 1))
-                    .padding(.top, 4)
+                    .padding(.top, 5)
             }
         }
         .frame(maxWidth: .infinity)
