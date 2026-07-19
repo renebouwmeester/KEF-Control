@@ -424,7 +424,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     private var bottomRow: some View {
@@ -481,7 +481,7 @@ struct PlayerView: View {
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .trailing)
         .disabled(model.volumeControlDisabled)
     }
 
@@ -564,7 +564,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .trailing)
     }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
