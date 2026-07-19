@@ -548,17 +548,24 @@ struct PlayerScreen: View {
         .menuOrder(.fixed)
     }
 
+    @State private var powerToggles = 0
+
     private var powerButton: some View {
-        Button { model.togglePower() } label: {
-            Image(systemName: "power")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(model.isStandby ? AnyShapeStyle(.secondary)
-                                                 : AnyShapeStyle(Color.phoneAccent))
-                .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .disabled(!model.reachable)
+        Image(systemName: "power")
+            .font(.system(size: 20, weight: .medium))
+            .foregroundStyle(model.isStandby ? AnyShapeStyle(.secondary)
+                                             : AnyShapeStyle(Color.phoneAccent))
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+            // Long-press only: standby next to the settings gear was too easy
+            // to hit by accident. Success haptic confirms the toggle fired.
+            .onLongPressGesture(minimumDuration: 0.5) {
+                powerToggles += 1
+                model.togglePower()
+            }
+            .sensoryFeedback(.success, trigger: powerToggles)
+            .opacity(model.reachable ? 1 : 0.4)
+            .allowsHitTesting(model.reachable)
     }
 
     // MARK: shared bits
