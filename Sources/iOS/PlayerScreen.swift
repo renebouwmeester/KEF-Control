@@ -219,8 +219,8 @@ struct PlayerScreen: View {
             }
             Button { model.control("pause") } label: {
                 Image(systemName: model.displayedIsPlaying ? "pause.circle.fill" : "play.circle.fill")
-                    .font(.system(size: 38))
-                    .frame(width: 56, height: 56)
+                    .font(.system(size: 52))
+                    .frame(width: 64, height: 64)
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
             }
