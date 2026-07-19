@@ -139,7 +139,8 @@ struct PlayerScreen: View {
             if let album = model.displayAlbum, album != model.displayArtist {
                 Text(album)
                     .font(.callout)
-                    .foregroundStyle(.quaternary)
+                    // Brighter than tertiary, a step under the artist line.
+                    .foregroundStyle(.white.opacity(0.5))
                     .lineLimit(1)
             }
         }
