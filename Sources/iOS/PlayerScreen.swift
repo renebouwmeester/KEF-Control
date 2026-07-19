@@ -18,6 +18,10 @@ struct PlayerScreen: View {
     private let margin: CGFloat = 24
 
     var body: some View {
+        // The hero square is sized from the container width explicitly —
+        // letting aspectRatio(.fit) negotiate makes it fit the VStack's
+        // proposed HEIGHT instead, shrinking the artwork.
+        GeometryReader { geo in
         VStack(spacing: 0) {
             if !model.reachable {
                 Spacer()
@@ -32,6 +36,7 @@ struct PlayerScreen: View {
                 Spacer()
             } else {
                 artworkHero
+                    .frame(width: geo.size.width, height: geo.size.width)
                 Group {
                     metadata
                         .padding(.top, 18)
@@ -49,6 +54,8 @@ struct PlayerScreen: View {
             }
             bottomBar
                 .padding(.horizontal, margin)
+        }
+        .frame(width: geo.size.width, height: geo.size.height)
         }
         // The artwork runs under the status bar / Dynamic Island; everything
         // below keeps its margins.
@@ -74,7 +81,6 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        .aspectRatio(1, contentMode: .fit)
         .clipShape(RoundedRectangle(cornerRadius: model.displayedIsPlaying ? 0 : 20,
                                     style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
