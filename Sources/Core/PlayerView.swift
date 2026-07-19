@@ -290,6 +290,9 @@ struct PlayerView: View {
             .disabled(model.volumeControlDisabled)
 
             Button {
+                // Opening always lands on volume presets; switching to
+                // webhooks/radio is a per-visit choice, not a sticky one.
+                if !model.showPresets { model.quickRowSet = QuickSet.presets.rawValue }
                 withAnimation(.easeInOut(duration: PanelAnim.duration)) {
                     model.showPresets.toggle()
                 }
@@ -355,13 +358,33 @@ struct PlayerView: View {
         return chosen
     }
 
-    /// The active set's content, with the mode icons at the TRAILING edge —
-    /// the chevron that opened this row lives right there, so the mouse is
-    /// already in place. Circled glyphs like the iOS switcher; the picker
-    /// hides when only one set exists.
+    /// One circle diameter for the item buttons of all three sets AND the
+    /// mode-picker glyphs. Budget for the worst case, all in 272pt:
+    /// picker 3×26+2×2 + gap 6 + items 6×26+5×5 = 269.
+    private static let quickDiameter: CGFloat = 26
+
+    /// Mode icons at the LEADING edge, the active set's content beside them.
+    /// Circled glyphs like the iOS switcher; the picker hides when only one
+    /// set exists.
     @ViewBuilder private var quickRow: some View {
         if !availableSets.isEmpty {
-            HStack(spacing: 10) {
+            HStack(spacing: 6) {
+                if availableSets.count > 1 {
+                    HStack(spacing: 2) {
+                        ForEach(availableSets, id: \.self) { set in
+                            Button { model.quickRowSet = set.rawValue } label: {
+                                Image(systemName: set.icon)
+                                    .font(.system(size: Self.quickDiameter, weight: .thin))
+                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
+                                                                       : AnyShapeStyle(.tertiary))
+                                    .frame(width: Self.quickDiameter, height: 30)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .help(set.help)
+                        }
+                    }
+                }
                 ZStack {
                     switch currentSet {
                     case .presets:  presetRow
@@ -370,22 +393,6 @@ struct PlayerView: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
-                if availableSets.count > 1 {
-                    HStack(spacing: 4) {
-                        ForEach(availableSets, id: \.self) { set in
-                            Button { model.quickRowSet = set.rawValue } label: {
-                                Image(systemName: set.icon)
-                                    .font(.system(size: 20, weight: .thin))
-                                    .foregroundStyle(currentSet == set ? AnyShapeStyle(.white)
-                                                                       : AnyShapeStyle(.tertiary))
-                                    .frame(width: 24, height: 30)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .help(set.help)
-                        }
-                    }
-                }
             }
         }
     }
@@ -393,17 +400,17 @@ struct PlayerView: View {
     /// Numbered circles firing a GET at the slot's URL; the URL itself shows
     /// as the tooltip.
     private var webhookRow: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 5) {
             ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
                     Button { model.fireWebhook(i) } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.07))
                             Text("\(i + 1)")
-                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                                .font(.system(size: 11, weight: .semibold).monospacedDigit())
                                 .foregroundStyle(.secondary)
                         }
-                        .frame(width: 30, height: 30)
+                        .frame(width: Self.quickDiameter, height: Self.quickDiameter)
                         .contentShape(Circle())
                     }
                     .buttonStyle(.plain)
@@ -445,24 +452,30 @@ struct PlayerView: View {
     }
 
     private var presetRow: some View {
-        HStack(spacing: 6) {
-            ForEach(model.volumePresets, id: \.self) { preset in
+        HStack(spacing: 5) {
+            // Circles like the webhook and radio buttons; 6 shown, like iOS.
+            ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
                 Button { model.setVolume(preset) } label: {
-                    Text("\(preset)")
-                        .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(active ? AnyShapeStyle(Color.appAccent) : AnyShapeStyle(.secondary))
-                        .frame(maxWidth: .infinity, minHeight: 22)
-                        .background(
-                            RoundedRectangle(cornerRadius: 6)
-                                .fill(active ? Color.appAccent.opacity(0.18) : Color.white.opacity(0.07))
-                        )
-                        .contentShape(RoundedRectangle(cornerRadius: 6))
+                    ZStack {
+                        Circle().fill(active ? Color.appAccent.opacity(0.22)
+                                             : Color.white.opacity(0.07))
+                        Text("\(preset)")
+                            .font(.system(size: 11, weight: .semibold).monospacedDigit())
+                            .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
+                                                    : AnyShapeStyle(.secondary))
+                        if active {
+                            Circle().strokeBorder(Color.appAccent, lineWidth: 1.5)
+                        }
+                    }
+                    .frame(width: Self.quickDiameter, height: Self.quickDiameter)
+                    .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
+        .frame(maxWidth: .infinity)
         .disabled(model.volumeControlDisabled)
     }
 
@@ -538,8 +551,8 @@ struct PlayerView: View {
     /// row's rhythm. Hidden entirely when no slot is set, so the panel is
     /// unchanged for anyone not using it.
     private var radioContent: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
+        HStack(spacing: 5) {
+            ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
                 }
@@ -563,7 +576,7 @@ struct PlayerView: View {
                 } else {
                     // Initials until the artwork arrives (or if it never does).
                     Text(Self.initials(station.title))
-                        .font(.system(size: 11))
+                        .font(.system(size: 10))
                         .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
                                                : AnyShapeStyle(.secondary))
                 }
@@ -571,7 +584,7 @@ struct PlayerView: View {
                     Circle().strokeBorder(Color.appAccent, lineWidth: 1.5)
                 }
             }
-            .frame(width: 30, height: 30)
+            .frame(width: Self.quickDiameter, height: Self.quickDiameter)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)
