@@ -11,6 +11,10 @@ struct PlayerScreen: View {
 
     @State private var scrubTarget: Double?   // finger position while scrubbing
 
+    /// Which set the quick row shows; persisted so the app opens on the one
+    /// you use.
+    @AppStorage("BottomRowShowsRadio") private var showsRadio = false
+
     private let margin: CGFloat = 24
 
     var body: some View {
@@ -37,9 +41,9 @@ struct PlayerScreen: View {
                     .padding(.top, 4)
                 volumeRow
                     .padding(.top, 4)
-                presetRow
-                radioRow
                 Spacer(minLength: 12)
+                quickRow
+                    .padding(.bottom, 6)
             }
             bottomBar
         }
@@ -229,51 +233,81 @@ struct PlayerScreen: View {
         .disabled(model.volumeControlDisabled)
     }
 
-    private var presetRow: some View {
-        Group {
-            if !model.volumePresets.isEmpty {
-                HStack(spacing: 8) {
-                    ForEach(model.volumePresets, id: \.self) { preset in
-                        let active = model.displayedVolume == preset
-                        Button { model.setVolume(preset) } label: {
-                            Text("\(preset)")
-                                .font(.subheadline.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
-                                                        : AnyShapeStyle(.secondary))
-                                .frame(maxWidth: .infinity, minHeight: 40)
-                                .background(
-                                    Capsule().fill(active ? Color.appAccent.opacity(0.22)
-                                                          : Color.white.opacity(0.08))
-                                )
-                                .contentShape(Capsule())
+    // MARK: quick row — volume presets / radio stations, switchable
+
+    /// One row carries both quick-action sets, directly above the source bar.
+    /// The leading button flips between them and always shows the icon of the
+    /// set it would switch TO.
+    private var quickRow: some View {
+        let hasPresets = !model.volumePresets.isEmpty
+        let hasRadio = model.hasRadioSlots
+        let radioNow = hasRadio && (showsRadio || !hasPresets)
+        return Group {
+            if hasPresets || hasRadio {
+                HStack(spacing: 10) {
+                    if hasPresets && hasRadio {
+                        Button {
+                            withAnimation(.snappy(duration: 0.3)) { showsRadio.toggle() }
+                        } label: {
+                            Image(systemName: radioNow ? "dial.medium" : "radio")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 32, height: 44)
+                                .contentShape(Rectangle())
+                                .contentTransition(.symbolEffect(.replace))
                         }
-                        .disabled(preset > model.effectiveMaxVolume)
+                        .buttonStyle(.plain)
                     }
+                    ZStack {
+                        if radioNow {
+                            radioContent
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                        } else {
+                            presetContent
+                                .transition(.move(edge: .leading).combined(with: .opacity))
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .clipped()
                 }
-                .buttonStyle(.plain)
-                .sensoryFeedback(.impact(weight: .light), trigger: model.displayedVolume)
-                .padding(.top, 14)
-                .disabled(model.volumeControlDisabled)
+                .frame(height: 44)
             }
         }
     }
 
-    // MARK: radio
-
-    private var radioRow: some View {
-        Group {
-            if model.hasRadioSlots {
-                HStack(spacing: 12) {
-                    ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
-                        if let station = slot {
-                            radioButton(i, station)
-                        }
-                    }
+    private var presetContent: some View {
+        HStack(spacing: 8) {
+            ForEach(model.volumePresets, id: \.self) { preset in
+                let active = model.displayedVolume == preset
+                Button { model.setVolume(preset) } label: {
+                    Text("\(preset)")
+                        .font(.subheadline.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
+                                                : AnyShapeStyle(.secondary))
+                        .frame(maxWidth: .infinity, minHeight: 40)
+                        .background(
+                            Capsule().fill(active ? Color.appAccent.opacity(0.22)
+                                                  : Color.white.opacity(0.08))
+                        )
+                        .contentShape(Capsule())
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.top, 14)
+                .disabled(preset > model.effectiveMaxVolume)
             }
         }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.impact(weight: .light), trigger: model.displayedVolume)
+        .disabled(model.volumeControlDisabled)
+    }
+
+    private var radioContent: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
+                if let station = slot {
+                    radioButton(i, station)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
