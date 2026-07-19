@@ -50,7 +50,7 @@ struct PlayerScreen: View {
                 scrubber
                 Group {
                     metadata
-                        .padding(.top, 26)
+                        .padding(.top, 30)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
                     // Equal flexible space around the transport centres it
@@ -139,7 +139,7 @@ struct PlayerScreen: View {
             if let album = model.displayAlbum, album != model.displayArtist {
                 Text(album)
                     .font(.callout)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.quaternary)
                     .lineLimit(1)
             }
         }
