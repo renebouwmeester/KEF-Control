@@ -322,38 +322,60 @@ struct PlayerScreen: View {
 
     // MARK: volume
 
+    /// Number left of the slider by default: a dragging right thumb covers
+    /// the slider's right end, so the readout stays visible there for the
+    /// right-thumbed majority. Settings can flip it for lefties.
+    @AppStorage("VolumeNumberLeft") private var volumeNumberLeft = true
+
+    private var muteButton: some View {
+        Button { model.toggleMute() } label: {
+            // Waves like the Mac panel's mute button — a bare speaker read
+            // as already-muted.
+            Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(model.displayedMuted ? AnyShapeStyle(.red)
+                                                     : AnyShapeStyle(.secondary))
+                .frame(width: 26, height: 26)
+                .contentShape(Rectangle())
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var volumeNumber: some View {
+        Text("\(model.displayedVolume)")
+            .font(.subheadline.weight(.semibold).monospacedDigit())
+            // Hug the slider on whichever side the number sits.
+            .frame(minWidth: 30, alignment: volumeNumberLeft ? .leading : .trailing)
+            .foregroundStyle(.secondary)
+    }
+
+    private var volumeSlider: some View {
+        Slider(
+            value: Binding(
+                get: { Double(model.displayedVolume) },
+                set: { model.setVolume(Int($0)) }
+            ),
+            in: Double(model.effectiveMinVolume)...Double(max(model.effectiveMaxVolume,
+                                                              model.effectiveMinVolume + 1)),
+            onEditingChanged: { model.isDraggingVolume = $0 }
+        )
+        // Quieter than the scrubber: the volume sits above the transport
+        // as a supporting control, not the headline.
+        .tint(.white.opacity(0.5))
+    }
+
     private var volumeRow: some View {
         HStack(spacing: 12) {
-            // The left speaker icon IS the mute toggle.
-            Button { model.toggleMute() } label: {
-                // Waves like the Mac panel's mute button — with the wave.3
-                // bookend gone, the bare speaker read as already-muted.
-                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.system(size: 15))
-                    .foregroundStyle(model.displayedMuted ? AnyShapeStyle(.red)
-                                                         : AnyShapeStyle(.secondary))
-                    .frame(width: 26, height: 26)
-                    .contentShape(Rectangle())
-                    .contentTransition(.symbolEffect(.replace))
+            if volumeNumberLeft {
+                volumeNumber
+                volumeSlider
+                muteButton
+            } else {
+                muteButton
+                volumeSlider
+                volumeNumber
             }
-            .buttonStyle(.plain)
-            Slider(
-                value: Binding(
-                    get: { Double(model.displayedVolume) },
-                    set: { model.setVolume(Int($0)) }
-                ),
-                in: Double(model.effectiveMinVolume)...Double(max(model.effectiveMaxVolume,
-                                                                  model.effectiveMinVolume + 1)),
-                onEditingChanged: { model.isDraggingVolume = $0 }
-            )
-            // Quieter than the scrubber: the volume sits above the transport
-            // as a supporting control, not the headline.
-            .tint(.white.opacity(0.5))
-            // The number is the right bookend — the wave icon added nothing.
-            Text("\(model.displayedVolume)")
-                .font(.subheadline.weight(.semibold).monospacedDigit())
-                .frame(minWidth: 30, alignment: .trailing)
-                .foregroundStyle(.secondary)
         }
         .disabled(model.volumeControlDisabled)
         // A selection tick per volume step, but only under the finger — the
