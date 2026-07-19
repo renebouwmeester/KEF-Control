@@ -336,8 +336,9 @@ struct PlayerScreen: View {
                         Button {
                             withAnimation(.spring(duration: 0.35, bounce: 0.25)) { showsRadio.toggle() }
                         } label: {
-                            Image(systemName: radioNow ? "dial.medium" : "radio")
-                                .font(.system(size: 15, weight: .medium))
+                            Image(systemName: radioNow ? "speaker.wave.2.circle"
+                                                       : "music.microphone.circle")
+                                .font(.system(size: 20, weight: .medium))
                                 .foregroundStyle(.secondary)
                                 .frame(width: 32, height: 44)
                                 .contentShape(Rectangle())
