@@ -354,9 +354,7 @@ struct PlayerScreen: View {
             // unreliable, and the decay doubles as a pleasant linger.
             .foregroundStyle(volumeGlow ? AnyShapeStyle(.white)
                                         : AnyShapeStyle(.secondary))
-            // Quick to light, slow to dim — the fade-out reads as an ember.
-            .animation(volumeGlow ? .easeOut(duration: 0.15)
-                                  : .easeOut(duration: 0.9), value: volumeGlow)
+            .animation(.easeOut(duration: 0.3), value: volumeGlow)
     }
 
     @State private var volumeGlow = false
@@ -410,10 +408,10 @@ struct PlayerScreen: View {
         // last activity, so it always returns to gray even if the slider's
         // end-of-drag callback goes missing.
         .onChange(of: model.isDraggingVolume) { _, dragging in
-            if dragging { touchGlow(decay: 1200) } else { touchGlow(decay: 500) }
+            if dragging { touchGlow(decay: 1200) } else { touchGlow(decay: 900) }
         }
         .onChange(of: model.displayedVolume) { _, _ in
-            if model.isDraggingVolume { touchGlow(decay: 600) }
+            if model.isDraggingVolume { touchGlow(decay: 900) }
         }
     }
 
