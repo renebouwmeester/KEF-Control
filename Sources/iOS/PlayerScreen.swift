@@ -14,8 +14,8 @@ struct PlayerScreen: View {
     @State private var scrubTarget: Double?   // finger position while scrubbing
 
     /// Rendered height of the title line; anything beyond one line shifts
-    /// the metadata block up by a quarter of the surplus, so a wrapped title
-    /// grows 25% upward / 75% downward (50/50 crowded the timestamps).
+    /// the metadata block up by a fifth of the surplus, so a wrapped title
+    /// grows 20% upward / 80% downward (50/50 crowded the timestamps).
     @State private var titleHeight: CGFloat = 0
     private var titleSurplus: CGFloat { max(0, titleHeight - 30) }
 
@@ -59,7 +59,7 @@ struct PlayerScreen: View {
                 Group {
                     metadata
                         .padding(.top, 27)
-                        .offset(y: -titleSurplus / 4)
+                        .offset(y: -titleSurplus / 5)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
                     // Equal flexible space around the transport centres it
