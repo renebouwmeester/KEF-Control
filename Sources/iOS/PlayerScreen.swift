@@ -60,11 +60,15 @@ struct PlayerScreen: View {
                 .frame(height: 0.5)
             bottomBar
                 .padding(.horizontal, margin)
+                .padding(.bottom, 16)
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
         // The artwork starts at the top safe-area edge: below the Dynamic
-        // Island, with the same breathing room the island has above it.
+        // Island, with the same breathing room the island has above it. The
+        // bottom edge dips into the home-indicator area so the source bar
+        // sits low, 16pt off the screen edge.
+        .ignoresSafeArea(edges: .bottom)
         .sensoryFeedback(.impact(weight: .light), trigger: model.isPlaying)
     }
 
