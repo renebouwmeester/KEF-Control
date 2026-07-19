@@ -160,39 +160,26 @@ struct SettingsSheet: View {
     }
 
     private var sourcesSection: some View {
-        // The bottom bar is designed around four source icons; once four are
-        // on, the remaining off-toggles grey out until one is freed.
-        let visibleCount = session.sourceRows.filter(\.visible).count
-        return Section {
-            // Id-based bindings, not ForEach($rows): index bindings get
-            // recreated mid-drag and made reordering lurch sideways.
-            ForEach(session.sourceRows) { row in
-                Toggle(row.name, isOn: visibleBinding(row.id))
-                    .disabled(!row.visible && visibleCount >= 4)
-            }
-            .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
-        } header: {
-            HStack {
-                Text("Sources")
-                Spacer()
-                EditButton().font(.caption)
-            }
-        } footer: {
-            Text("Edit to reorder — the bar shows inputs in this order. "
-                 + "Up to four can be shown: with four selected the others "
-                 + "are greyed out until you switch one off.")
-        }
-    }
-
-    private func visibleBinding(_ id: String) -> Binding<Bool> {
-        Binding(
-            get: { session.sourceRows.first(where: { $0.id == id })?.visible ?? true },
-            set: { value in
-                if let i = session.sourceRows.firstIndex(where: { $0.id == id }) {
-                    session.sourceRows[i].visible = value
+        Section {
+            // Reordering happens on a dedicated plain-List screen — dragging
+            // rows inside a grouped Form lurches sideways (same reason the
+            // Mac window uses a List).
+            NavigationLink {
+                SourceOrderList(session: session)
+            } label: {
+                HStack {
+                    Text("Order & visibility")
+                    Spacer()
+                    Text(session.sourceRows.filter(\.visible).map(\.name)
+                        .joined(separator: ", "))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
-        )
+        } header: {
+            Text("Sources")
+        }
     }
 
     private var radioSection: some View {
@@ -257,5 +244,44 @@ struct SettingsSheet: View {
             Text("Each slot appears as a numbered button in the quick row "
                  + "and fires a GET request at its URL.")
         }
+    }
+}
+
+/// Dedicated reorder screen: a plain List with permanent drag handles.
+struct SourceOrderList: View {
+    @ObservedObject var session: SettingsSheetSession
+
+    var body: some View {
+        let visibleCount = session.sourceRows.filter(\.visible).count
+        List {
+            ForEach(session.sourceRows) { row in
+                Toggle(row.name, isOn: visibleBinding(row.id))
+                    .disabled(!row.visible && visibleCount >= 4)
+            }
+            .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
+        }
+        // Handles always visible — this screen exists to reorder.
+        .environment(\.editMode, .constant(.active))
+        .navigationTitle("Sources")
+        .navigationBarTitleDisplayMode(.inline)
+        .safeAreaInset(edge: .bottom) {
+            Text("Drag to reorder — the bar shows inputs in this order. "
+                 + "Up to four can be shown: with four selected the others "
+                 + "are greyed out until you switch one off.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .padding()
+        }
+    }
+
+    private func visibleBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { session.sourceRows.first(where: { $0.id == id })?.visible ?? true },
+            set: { value in
+                if let i = session.sourceRows.firstIndex(where: { $0.id == id }) {
+                    session.sourceRows[i].visible = value
+                }
+            }
+        )
     }
 }
