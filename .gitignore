@@ -5,3 +5,8 @@
 build/
 dist/
 *.zip
+
+# Xcode (iOS target; project.yml is the source of truth, but the generated
+# .xcodeproj is committed so a clone needs no xcodegen)
+xcuserdata/
+DerivedData/

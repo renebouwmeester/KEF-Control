@@ -111,8 +111,56 @@ func dominantDarkTint(from image: PlatformImage) -> Color? {
         alpha: 1
     ))
     #else
-    // iOS: to be implemented with CoreGraphics when the port lands; nil just
-    // means the panel keeps its default dark background.
-    return nil
+    // Same histogram as the AppKit branch, but via CoreGraphics: downsample
+    // into an sRGB bitmap and convert pixels to HSB by hand (UIColor's
+    // getHue is per-instance and would allocate 576 of them).
+    let size = 24
+    guard let cg = image.cgImage,
+          let space = CGColorSpace(name: CGColorSpace.sRGB),
+          let ctx = CGContext(data: nil, width: size, height: size,
+                              bitsPerComponent: 8, bytesPerRow: size * 4,
+                              space: space,
+                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+    else { return nil }
+    ctx.interpolationQuality = .medium
+    ctx.draw(cg, in: CGRect(x: 0, y: 0, width: size, height: size))
+    guard let buf = ctx.data else { return nil }
+    let px = buf.bindMemory(to: UInt8.self, capacity: size * size * 4)
+
+    // histogram over 12 hue buckets, colorful pixels only
+    var buckets = [(count: Int, r: Double, g: Double, b: Double)](
+        repeating: (0, 0, 0, 0), count: 12)
+    for i in 0..<(size * size) {
+        let r = Double(px[i * 4]) / 255
+        let g = Double(px[i * 4 + 1]) / 255
+        let b = Double(px[i * 4 + 2]) / 255
+        let (h, s, v) = rgbToHSB(r: r, g: g, b: b)
+        guard s > 0.2, v > 0.15, v < 0.95 else { continue }
+        let bucket = min(11, Int(h * 12))
+        buckets[bucket].count += 1
+        buckets[bucket].r += r
+        buckets[bucket].g += g
+        buckets[bucket].b += b
+    }
+    guard let best = buckets.max(by: { $0.count < $1.count }),
+          best.count >= 20 else { return nil }  // < ~3% colorful: treat as mono
+
+    let n = Double(best.count)
+    let (h, s, _) = rgbToHSB(r: best.r / n, g: best.g / n, b: best.b / n)
+    return Color(hue: h, saturation: min(s, 0.55), brightness: 0.17)
     #endif
 }
+
+#if !canImport(AppKit)
+private func rgbToHSB(r: Double, g: Double, b: Double) -> (h: Double, s: Double, v: Double) {
+    let mx = Swift.max(r, g, b), mn = Swift.min(r, g, b), d = mx - mn
+    guard d > 0 else { return (0, 0, mx) }
+    var h: Double
+    if mx == r { h = ((g - b) / d).truncatingRemainder(dividingBy: 6) }
+    else if mx == g { h = (b - r) / d + 2 }
+    else { h = (r - g) / d + 4 }
+    h /= 6
+    if h < 0 { h += 1 }
+    return (h, mx == 0 ? 0 : d / mx, mx)
+}
+#endif

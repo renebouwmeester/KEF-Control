@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		055B661EC4B04EBA591CE75D /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */; };
+		320316FAB4B0B663B6EA94FD /* SpeakerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */; };
+		39F9A55E25BB1B5B331B0362 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28A9D34EAED61B1FBA39E7C /* Platform.swift */; };
+		52555DDCDF4AA69004FD96C2 /* KEFAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EC30DC5CC475CCC090B938 /* KEFAPI.swift */; };
+		94C3F6C66BE81F5C6F0ABE0D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 92048DB27F2888A7E78245D9 /* Assets.xcassets */; };
+		9910FF1BCC149FE4B0F52836 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFBF9FD52E12AD5AA88C0A78 /* PlayerView.swift */; };
+		A4D37D8EF7EDBE944773A933 /* SpeakerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */; };
+		B3D6170A710A08785AABAABE /* KEFControlApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7B70E10678C89DE55FFA6A67 /* KEFControlApp.swift */; };
+		D7D05854F775419A9CABAF8D /* bluetooth-glyph.png in Resources */ = {isa = PBXBuildFile; fileRef = 0F57FBC5ABF6B193211FD29C /* bluetooth-glyph.png */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0F57FBC5ABF6B193211FD29C /* bluetooth-glyph.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "bluetooth-glyph.png"; sourceTree = "<group>"; };
+		2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSheet.swift; sourceTree = "<group>"; };
+		3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerDiscovery.swift; sourceTree = "<group>"; };
+		70EC30DC5CC475CCC090B938 /* KEFAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KEFAPI.swift; sourceTree = "<group>"; };
+		7B70E10678C89DE55FFA6A67 /* KEFControlApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KEFControlApp.swift; sourceTree = "<group>"; };
+		8916FA44E0DDD046ED2DDF67 /* KEFControl.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = KEFControl.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		92048DB27F2888A7E78245D9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A238DA118E6F1C9C55C644FB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerModel.swift; sourceTree = "<group>"; };
+		DFBF9FD52E12AD5AA88C0A78 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		E28A9D34EAED61B1FBA39E7C /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0E4B4E3E1694199220A3963E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				8916FA44E0DDD046ED2DDF67 /* KEFControl.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3557313CBCA23892DF863D8A /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A39924F70A4D8E9536AA3C11 /* Core */,
+				8589110043286535F7DDB868 /* iOS */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		8589110043286535F7DDB868 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				92048DB27F2888A7E78245D9 /* Assets.xcassets */,
+				A238DA118E6F1C9C55C644FB /* Info.plist */,
+				7B70E10678C89DE55FFA6A67 /* KEFControlApp.swift */,
+				2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */,
+			);
+			path = iOS;
+			sourceTree = "<group>";
+		};
+		A39924F70A4D8E9536AA3C11 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				70EC30DC5CC475CCC090B938 /* KEFAPI.swift */,
+				E28A9D34EAED61B1FBA39E7C /* Platform.swift */,
+				DFBF9FD52E12AD5AA88C0A78 /* PlayerView.swift */,
+				3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */,
+				B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		D5AA7005C103A6A2DF3E395D = {
+			isa = PBXGroup;
+			children = (
+				0F57FBC5ABF6B193211FD29C /* bluetooth-glyph.png */,
+				3557313CBCA23892DF863D8A /* Sources */,
+				0E4B4E3E1694199220A3963E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B5579FC1593FEE75BE2045E8 /* KEFControl */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 240F02F1FDC88787F124F885 /* Build configuration list for PBXNativeTarget "KEFControl" */;
+			buildPhases = (
+				B52A0BCC791EC63C7C7FD764 /* Sources */,
+				56270F35C9501498EEC08B44 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = KEFControl;
+			packageProductDependencies = (
+			);
+			productName = KEFControl;
+			productReference = 8916FA44E0DDD046ED2DDF67 /* KEFControl.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		8C1434216EE37B0EE78C374A /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					B5579FC1593FEE75BE2045E8 = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0B84347CABBF289D47D65042 /* Build configuration list for PBXProject "KEFControl" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = D5AA7005C103A6A2DF3E395D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0E4B4E3E1694199220A3963E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				B5579FC1593FEE75BE2045E8 /* KEFControl */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		56270F35C9501498EEC08B44 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				94C3F6C66BE81F5C6F0ABE0D /* Assets.xcassets in Resources */,
+				D7D05854F775419A9CABAF8D /* bluetooth-glyph.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B52A0BCC791EC63C7C7FD764 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				52555DDCDF4AA69004FD96C2 /* KEFAPI.swift in Sources */,
+				B3D6170A710A08785AABAABE /* KEFControlApp.swift in Sources */,
+				39F9A55E25BB1B5B331B0362 /* Platform.swift in Sources */,
+				9910FF1BCC149FE4B0F52836 /* PlayerView.swift in Sources */,
+				055B661EC4B04EBA591CE75D /* SettingsSheet.swift in Sources */,
+				320316FAB4B0B663B6EA94FD /* SpeakerDiscovery.swift in Sources */,
+				A4D37D8EF7EDBE944773A933 /* SpeakerModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0703E8A22126DAF33BE5ECF6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rene.kef-control-lite";
+				PRODUCT_NAME = "KEF Control";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		3FA118F97D84971C76623F60 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		ADF2BCFF276D33DD73CCE7A8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		DF8EDDA7374B112179115D5E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = Sources/iOS/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.rene.kef-control-lite";
+				PRODUCT_NAME = "KEF Control";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0B84347CABBF289D47D65042 /* Build configuration list for PBXProject "KEFControl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3FA118F97D84971C76623F60 /* Debug */,
+				ADF2BCFF276D33DD73CCE7A8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		240F02F1FDC88787F124F885 /* Build configuration list for PBXNativeTarget "KEFControl" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0703E8A22126DAF33BE5ECF6 /* Debug */,
+				DF8EDDA7374B112179115D5E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 8C1434216EE37B0EE78C374A /* Project object */;
+}

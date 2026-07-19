@@ -74,6 +74,14 @@ state, and the player panel — no AppKit or Carbon, so it can be shared with
 an iOS app) and `Sources/macOS` (menu bar item, panel window, hotkeys and the
 Settings window).
 
+### iOS
+
+An iOS version of the same app lives behind `KEFControl.xcodeproj`
+(generated from `project.yml` with [xcodegen](https://github.com/yonaskolb/XcodeGen)):
+`Sources/Core` shared as-is, plus a small SwiftUI shell in `Sources/iOS`.
+Open the project in Xcode, pick your signing team, and run it on an iPhone.
+It is not distributed anywhere yet — build from source.
+
 To launch it at login, add it in System Settings → General → Login Items.
 
 ## First run
