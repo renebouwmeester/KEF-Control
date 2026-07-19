@@ -161,24 +161,19 @@ struct SettingsSheet: View {
 
     private var sourcesSection: some View {
         Section {
-            // Reordering happens on a dedicated plain-List screen — dragging
-            // rows inside a grouped Form lurches sideways (same reason the
-            // Mac window uses a List).
-            NavigationLink {
-                SourceOrderList(session: session)
-            } label: {
-                HStack {
-                    Text("Order & visibility")
-                    Spacer()
-                    Text(session.sourceRows.filter(\.visible).map(\.name)
-                        .joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
+            // An embedded plain List with its own always-active edit mode:
+            // dragging rows directly in the grouped Form lurched sideways,
+            // and a pushed screen was an extra step. The inner List scopes
+            // the smooth reordering to just these rows.
+            SourceOrderInline(session: session)
+                .frame(height: CGFloat(session.sourceRows.count) * 44)
+                .listRowInsets(EdgeInsets())
         } header: {
             Text("Sources")
+        } footer: {
+            Text("Drag to reorder — the bar shows inputs in this order. "
+                 + "Up to four can be shown: with four selected the others "
+                 + "are greyed out until you switch one off.")
         }
     }
 
@@ -247,8 +242,10 @@ struct SettingsSheet: View {
     }
 }
 
-/// Dedicated reorder screen: a plain List with permanent drag handles.
-struct SourceOrderList: View {
+/// Embedded reorder list: plain style, fixed height, scroll disabled, its
+/// own permanently-active edit mode — smooth List dragging inline in the
+/// Form without a pushed screen.
+struct SourceOrderInline: View {
     @ObservedObject var session: SettingsSheetSession
 
     var body: some View {
@@ -260,18 +257,10 @@ struct SourceOrderList: View {
             }
             .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
         }
-        // Handles always visible — this screen exists to reorder.
+        .listStyle(.plain)
+        .scrollDisabled(true)
+        .scrollContentBackground(.hidden)
         .environment(\.editMode, .constant(.active))
-        .navigationTitle("Sources")
-        .navigationBarTitleDisplayMode(.inline)
-        .safeAreaInset(edge: .bottom) {
-            Text("Drag to reorder — the bar shows inputs in this order. "
-                 + "Up to four can be shown: with four selected the others "
-                 + "are greyed out until you switch one off.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding()
-        }
     }
 
     private func visibleBinding(_ id: String) -> Binding<Bool> {
