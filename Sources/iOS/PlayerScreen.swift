@@ -94,7 +94,9 @@ struct PlayerScreen: View {
                     // island's own gap to the screen top.
                     .padding(.top, 10)
                 scrubber
-                    .frame(width: geo.size.width - 32)
+                    // Spans the card's straight bottom edge: card width
+                    // minus the two 29pt corner radii.
+                    .frame(width: geo.size.width - 32 - 58)
                     .padding(.top, 20)
                 Group {
                     metadata
