@@ -300,6 +300,11 @@ struct PlayerScreen: View {
                 .foregroundStyle(.secondary)
         }
         .disabled(model.volumeControlDisabled)
+        // A selection tick per volume step, but only under the finger — the
+        // value also changes from polls, hotkeys and the Mac app.
+        .sensoryFeedback(trigger: model.displayedVolume) { _, _ in
+            model.isDraggingVolume ? .selection : nil
+        }
     }
 
     // MARK: quick row — volume presets / radio stations, switchable
