@@ -131,8 +131,7 @@ struct PlayerScreen: View {
             if let artist = model.displayArtist {
                 Text(artist)
                     .font(.body)
-                    // A notch above .secondary, two above the album's 0.5.
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
             // Skip the album when it just repeats the artist (self-titled
@@ -140,8 +139,7 @@ struct PlayerScreen: View {
             if let album = model.displayAlbum, album != model.displayArtist {
                 Text(album)
                     .font(.callout)
-                    // Brighter than tertiary, a step under the artist line.
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(.white.opacity(0.45))
                     .lineLimit(1)
             }
         }
