@@ -126,12 +126,13 @@ struct PlayerScreen: View {
         VStack(spacing: 7) {
             Text(model.displayTitle)
                 .font(.title3.weight(.semibold))
+                .foregroundStyle(.white)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
             if let artist = model.displayArtist {
                 Text(artist)
                     .font(.body)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white.opacity(0.75))
                     .lineLimit(1)
             }
             // Skip the album when it just repeats the artist (self-titled
@@ -139,7 +140,7 @@ struct PlayerScreen: View {
             if let album = model.displayAlbum, album != model.displayArtist {
                 Text(album)
                     .font(.callout)
-                    .foregroundStyle(.white.opacity(0.45))
+                    .foregroundStyle(.white.opacity(0.5))
                     .lineLimit(1)
             }
         }
