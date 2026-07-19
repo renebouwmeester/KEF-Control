@@ -13,6 +13,12 @@ struct PlayerScreen: View {
 
     @State private var scrubTarget: Double?   // finger position while scrubbing
 
+    /// Rendered height of the title line; anything beyond one line shifts
+    /// the metadata block up by half the surplus, so a wrapped title grows
+    /// 50% upward / 50% downward instead of only pushing down.
+    @State private var titleHeight: CGFloat = 0
+    private var titleSurplus: CGFloat { max(0, titleHeight - 30) }
+
     /// Which set the quick row shows; persisted so the app opens on the one
     /// you use.
     @AppStorage("BottomRowShowsRadio") private var showsRadio = false
@@ -53,6 +59,7 @@ struct PlayerScreen: View {
                 Group {
                     metadata
                         .padding(.top, 27)
+                        .offset(y: -titleSurplus / 2)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
                     // Equal flexible space around the transport centres it
@@ -133,6 +140,9 @@ struct PlayerScreen: View {
                 .foregroundStyle(.white)
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
+                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: {
+                    titleHeight = $0
+                }
             if let artist = model.displayArtist {
                 Text(artist)
                     .font(.body)
