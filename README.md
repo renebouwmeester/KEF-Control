@@ -69,6 +69,11 @@ open -a "KEF Control"
 binary, and installs to `~/Applications/KEF Control.app`. Xcode Command Line
 Tools are the only prerequisite: `xcode-select --install`.
 
+The source is split in two layers: `Sources/Core` (speaker API, discovery,
+state, and the player panel — no AppKit or Carbon, so it can be shared with
+an iOS app) and `Sources/macOS` (menu bar item, panel window, hotkeys and the
+Settings window).
+
 To launch it at login, add it in System Settings → General → Login Items.
 
 ## First run
