@@ -37,11 +37,12 @@ struct PlayerScreen: View {
             } else {
                 artworkHero
                     .frame(width: geo.size.width, height: geo.size.width)
+                // Attached to the artwork's bottom edge, full width like the
+                // artwork itself.
+                scrubber
                 Group {
                     metadata
-                        .padding(.top, 18)
-                    scrubber
-                        .padding(.top, 14)
+                        .padding(.top, 10)
                     transport
                         .padding(.top, 4)
                     volumeRow
@@ -134,24 +135,26 @@ struct PlayerScreen: View {
         return min(1, max(0, (scrubTarget ?? model.displaySeek ?? 0) / length))
     }
 
-    /// Native-feeling scrubber: a capsule that thickens under the finger,
-    /// elapsed/remaining labels underneath. Read-only (no thickening, no
-    /// gesture) when the source can't seek — Roon RAAT rejects the command.
+    /// A thin line glued to the artwork's bottom edge, thickening downward
+    /// under the finger; timestamps tucked right below. The touch target
+    /// extends invisibly above and below the line. Read-only (no thickening,
+    /// no gesture) when the source can't seek — Roon RAAT rejects the command.
     private var scrubber: some View {
-        VStack(spacing: 5) {
+        VStack(spacing: 4) {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
-                    Capsule().fill(.white.opacity(0.25))
-                    Capsule().fill(.white.opacity(0.8))
+                    Rectangle().fill(.white.opacity(0.25))
+                    Rectangle().fill(.white.opacity(0.8))
                         .frame(width: max(0, geo.size.width * fraction))
                 }
-                .frame(height: model.isScrubbing ? 10 : 6)
-                .frame(maxHeight: .infinity)   // vertical centre of the hit area
+                .frame(height: model.isScrubbing ? 8 : 3)
+                // Grow downward: the top edge stays flush with the artwork.
+                .frame(maxHeight: .infinity, alignment: .top)
                 .animation(.easeOut(duration: 0.15), value: model.isScrubbing)
-                .contentShape(Rectangle())
+                .contentShape(Rectangle().inset(by: -12))
                 .gesture(scrubGesture(width: geo.size.width))
             }
-            .frame(height: 30)   // whole strip is the touch target
+            .frame(height: 8)
             HStack {
                 Text(timeLabel(scrubTarget ?? model.displaySeek ?? 0))
                 Spacer()
@@ -161,6 +164,7 @@ struct PlayerScreen: View {
             }
             .font(.caption2.monospacedDigit())
             .foregroundStyle(.secondary)
+            .padding(.horizontal, 10)
         }
         .opacity(model.displayLength == nil ? 0 : 1)
     }
