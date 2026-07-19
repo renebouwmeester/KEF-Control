@@ -53,6 +53,11 @@ struct PlayerScreen: View {
                 }
                 .padding(.horizontal, margin)
             }
+            // Hairline separating the source bar from the main screen —
+            // full-bleed, like the artwork and progress line.
+            Rectangle()
+                .fill(.white.opacity(0.12))
+                .frame(height: 0.5)
             bottomBar
                 .padding(.horizontal, margin)
         }
