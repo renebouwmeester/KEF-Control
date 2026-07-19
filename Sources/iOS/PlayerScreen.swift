@@ -289,7 +289,9 @@ struct PlayerScreen: View {
         HStack(spacing: 12) {
             // The left speaker icon IS the mute toggle.
             Button { model.toggleMute() } label: {
-                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.fill")
+                // Waves like the Mac panel's mute button — with the wave.3
+                // bookend gone, the bare speaker read as already-muted.
+                Image(systemName: model.displayedMuted ? "speaker.slash.fill" : "speaker.wave.2.fill")
                     .font(.system(size: 15))
                     .foregroundStyle(model.displayedMuted ? AnyShapeStyle(.red)
                                                          : AnyShapeStyle(.secondary))
