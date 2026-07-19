@@ -141,8 +141,10 @@ struct SettingsView: View {
                             }
                             Spacer()
                             if found.ip == session.ipText {
+                                // Not appAccent: that is white now, invisible
+                                // in this light window.
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(Color.appAccent)
+                                    .foregroundStyle(.primary)
                             }
                         }
                         .contentShape(Rectangle())

@@ -45,10 +45,11 @@ enum PanelMetrics {
     static let canvasHeight: CGFloat = 820
 }
 
-// Hardcoded accent (#98A8D9): the system accent resolves differently per macOS
-// version (26 gives a harder blue), so pin the macOS 27 dark-mode value.
+// Panel accent: plain white, matching the iOS app (2026-07-19). This app
+// deliberately diverges from the blue (#98A8D9) the sibling menu bar apps
+// share; the panel is always dark, so white always reads.
 extension Color {
-    static let appAccent = Color(red: 0.5961, green: 0.6588, blue: 0.8510)
+    static let appAccent = Color.white
 }
 
 /// Bundled template PNGs for inputs SF Symbols doesn't cover — Bluetooth's

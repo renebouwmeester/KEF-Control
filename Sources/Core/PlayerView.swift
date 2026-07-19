@@ -21,6 +21,13 @@ struct PlayerView: View {
             } else {
                 artworkView
                 progressBar
+                // Timestamps + format badge, like the iOS app; hidden with
+                // the progress info when the source reports no duration.
+                if model.displayLength != nil {
+                    timeRow
+                        .padding(.horizontal, 10)
+                        .padding(.top, 5)
+                }
             }
             VStack(spacing: 12) {
                 if model.reachable && !model.isStandby {
@@ -30,12 +37,10 @@ struct PlayerView: View {
                 VStack(spacing: 12) {
                     volumeRow
                     // Presets belong with the volume they set, so they expand
-                    // directly under that row; the format/EQ line stays put
-                    // just above the divider instead of being pushed down.
+                    // directly under that row.
                     if model.showPresets {
                         presetRow
                     }
-                    audioFormatCaption
                 }
                 radioRow
                 Divider()
@@ -108,33 +113,53 @@ struct PlayerView: View {
         .clipped()
     }
 
-    /// The speaker's incoming stream format, as a quiet caption under the
-    /// volume slider. Hidden when the speaker isn't rendering a stream, so the
-    /// row takes no height at all — matches KEF Audio.
-    @ViewBuilder private var audioFormatCaption: some View {
-        if let format = model.audioFormatText, model.showsKEFStream {
-            Text(format)
-                .font(.subheadline)                     // a notch under the album line
-                .foregroundStyle(Color(white: 0.65))   // same as the album line
-                .lineLimit(1)
-                .allowsHitTesting(false)
-        }
-    }
-
     /// Display-only: the KEF HTTP API exposes play position read-only.
     /// With no track duration it renders as an all-grey separator line.
+    /// Tinted with a light pastel of the artwork's own hue, like the iOS
+    /// app; mono covers fall back to white.
     private var progressBar: some View {
         GeometryReader { geo in
             let length = model.displayLength ?? 0
             let fraction: CGFloat = length > 0 ? max(0, min(1, (model.displaySeek ?? 0) / length)) : 0
+            let barTint = model.accentTint ?? .white
             ZStack(alignment: .leading) {
-                Rectangle().fill(Color(white: 0.35))
-                Rectangle().fill(Color.appAccent).frame(width: geo.size.width * fraction)
+                Rectangle().fill(barTint.opacity(0.25))
+                Rectangle().fill(barTint.opacity(0.9)).frame(width: geo.size.width * fraction)
             }
             .contentShape(Rectangle().inset(by: -8))   // easier to grab than 2 pt
             .gesture(model.displayCanSeek && length > 0 ? scrubGesture(width: geo.size.width, length: length) : nil)
         }
         .frame(height: 2)
+    }
+
+    /// Elapsed / remaining under the progress line, with the stream format as
+    /// a bordered capsule centred between them — mirrors the iOS app.
+    private var timeRow: some View {
+        ZStack {
+            HStack {
+                Text(Self.timeLabel(model.displaySeek ?? 0))
+                Spacer()
+                if let length = model.displayLength {
+                    Text("-" + Self.timeLabel(max(0, length - (model.displaySeek ?? 0))))
+                }
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.secondary)
+            // Centred between the timestamps, independent of their widths.
+            if let format = model.audioFormatText, model.showsKEFStream {
+                Text(format)
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2.5)
+                    .overlay(Capsule().strokeBorder(.tertiary, lineWidth: 1))
+            }
+        }
+    }
+
+    private static func timeLabel(_ seconds: Double) -> String {
+        let s = Int(seconds.rounded())
+        return String(format: "%d:%02d", s / 60, s % 60)
     }
 
     private func scrubGesture(width: CGFloat, length: Double) -> some Gesture {
