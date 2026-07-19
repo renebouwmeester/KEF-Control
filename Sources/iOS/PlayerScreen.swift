@@ -71,11 +71,11 @@ struct PlayerScreen: View {
                     .padding(.horizontal, margin)
                     // 23pt keeps the row low without the icons brushing the
                     // home-indicator swipe zone.
-                    .padding(.bottom, 23)
+                    .padding(.bottom, 19)
                 if quickRowVisible {
                     quickOverlay
                         .padding(.horizontal, margin)
-                        .padding(.bottom, 23)
+                        .padding(.bottom, 19)
                         .background(.regularMaterial)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
