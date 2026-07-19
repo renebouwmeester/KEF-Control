@@ -34,6 +34,9 @@ targets:
           network.
         NSBonjourServices:
           - _kef-info._tcp
+        # Only exempt encryption (HTTPS to the speaker, HMAC signing) — skips
+        # the export-compliance question on every TestFlight upload.
+        ITSAppUsesNonExemptEncryption: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rene.kef-control-lite
