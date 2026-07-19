@@ -80,6 +80,7 @@ struct SettingsSheet: View {
         NavigationStack {
             Form {
                 speakerSection
+                handednessSection
                 sourcesSection
                 radioSection
                 volumeSection
@@ -141,6 +142,23 @@ struct SettingsSheet: View {
         }
     }
 
+    /// Live, not staged: flipping it mirrors the layout instantly, which is
+    /// its own confirmation.
+    @AppStorage("LeftHanded") private var leftHanded = false
+
+    private var handednessSection: some View {
+        Section {
+            Picker("Use app", selection: $leftHanded) {
+                Text("Right-handed").tag(false)
+                Text("Left-handed").tag(true)
+            }
+        } footer: {
+            Text("Mirrors the controls so they cluster on your thumb's side, "
+                 + "and keeps the volume number where the dragging thumb "
+                 + "can't cover it.")
+        }
+    }
+
     private var sourcesSection: some View {
         Section {
             ForEach($session.sourceRows) { $row in
@@ -186,15 +204,8 @@ struct SettingsSheet: View {
         .task { if !session.stationsLoaded { await session.loadStations() } }
     }
 
-    /// Live, not staged: flipping it is its own visible confirmation.
-    @AppStorage("VolumeNumberLeft") private var volumeNumberLeft = true
-
     private var volumeSection: some View {
         Section {
-            Picker("Volume number", selection: $volumeNumberLeft) {
-                Text("Left of slider").tag(true)
-                Text("Right of slider").tag(false)
-            }
             // 6 on iOS; a 7th slot set on the Mac keep their values.
             ForEach(0..<6, id: \.self) { i in
                 LabeledContent("Preset \(i + 1)") {
@@ -205,10 +216,7 @@ struct SettingsSheet: View {
                 }
             }
         } header: {
-            Text("Volume")
-        } footer: {
-            Text("Left keeps the number readable while a right thumb drags "
-                 + "the slider.")
+            Text("Volume presets")
         }
     }
 

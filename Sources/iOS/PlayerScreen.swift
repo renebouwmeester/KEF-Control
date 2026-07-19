@@ -322,10 +322,9 @@ struct PlayerScreen: View {
 
     // MARK: volume
 
-    /// Number left of the slider by default: a dragging right thumb covers
-    /// the slider's right end, so the readout stays visible there for the
-    /// right-thumbed majority. Settings can flip it for lefties.
-    @AppStorage("VolumeNumberLeft") private var volumeNumberLeft = true
+    /// One switch mirrors the whole layout: controls cluster on the thumb's
+    /// side, readouts sit where the dragging thumb can't cover them.
+    @AppStorage("LeftHanded") private var leftHanded = false
 
     private var muteButton: some View {
         Button { model.toggleMute() } label: {
@@ -346,7 +345,7 @@ struct PlayerScreen: View {
         Text("\(model.displayedVolume)")
             .font(.subheadline.weight(.semibold).monospacedDigit())
             // Hug the slider on whichever side the number sits.
-            .frame(minWidth: 30, alignment: volumeNumberLeft ? .leading : .trailing)
+            .frame(minWidth: 30, alignment: leftHanded ? .trailing : .leading)
             // Lights up while the finger is on the slider — the readout is
             // the whole point of the drag. Timer-driven rather than bound to
             // isDraggingVolume directly: the end-of-drag event proved
@@ -386,14 +385,15 @@ struct PlayerScreen: View {
 
     private var volumeRow: some View {
         HStack(spacing: 12) {
-            if volumeNumberLeft {
-                volumeNumber
-                volumeSlider
+            // The number sits opposite the dragging thumb so it stays visible.
+            if leftHanded {
                 muteButton
+                volumeSlider
+                volumeNumber
             } else {
-                muteButton
-                volumeSlider
                 volumeNumber
+                volumeSlider
+                muteButton
             }
         }
         .disabled(model.volumeControlDisabled)
@@ -417,19 +417,30 @@ struct PlayerScreen: View {
 
     /// The quick row with its closing chevron, sitting where the source bar
     /// was — the chevron mirrors the one that opened it.
+    private var closeChevron: some View {
+        Button {
+            withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = false }
+        } label: {
+            Image(systemName: "chevron.down")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(width: 32, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Controls sit on the thumb's side: trailing for right-handed,
+    /// leading for left-handed.
     private var quickOverlay: some View {
         HStack(spacing: 8) {
-            quickRow
-            Button {
-                withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = false }
-            } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 32, height: 44)
-                    .contentShape(Rectangle())
+            if leftHanded {
+                closeChevron
+                quickRow
+            } else {
+                quickRow
+                closeChevron
             }
-            .buttonStyle(.plain)
         }
     }
 
@@ -440,10 +451,11 @@ struct PlayerScreen: View {
         Group {
             if !availableSets.isEmpty {
                 HStack(spacing: 0) {
-                    // Fixed six-slot grid anchored at the row's left edge; a
-                    // partial set right-aligns inside it, so its last icon
-                    // lands exactly where slot 6 sits. The Spacer keeps a
-                    // natural gap to the picker.
+                    // Fixed six-slot grid; partial sets align toward the
+                    // picker on the thumb's side, so the nearest icon always
+                    // lands at its natural slot. The Spacer keeps a natural
+                    // gap to the picker.
+                    if leftHanded { setPicker; Spacer(minLength: 8) }
                     ZStack {
                         switch currentSet {
                         case .presets:
@@ -454,29 +466,33 @@ struct PlayerScreen: View {
                             radioContent.transition(.blurReplace)
                         }
                     }
-                    .frame(width: Self.presetDiameter * 6 + 9 * 5, alignment: .trailing)
+                    .frame(width: Self.presetDiameter * 6 + 9 * 5,
+                           alignment: leftHanded ? .leading : .trailing)
                     .clipped()
-                    Spacer(minLength: 8)
-                    if let next = nextSet {
-                        Button {
-                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
-                                quickSetRaw = next.rawValue
-                            }
-                        } label: {
-                            Image(systemName: next.icon)
-                                // The circled glyph draws at the same
-                                // diameter as the preset circles beside it.
-                                .font(.system(size: Self.presetDiameter, weight: .thin))
-                                .foregroundStyle(.secondary)
-                                .frame(width: 40, height: 44)
-                                .contentShape(Rectangle())
-                                .contentTransition(.symbolEffect(.replace))
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    if !leftHanded { Spacer(minLength: 8); setPicker }
                 }
                 .frame(height: 44)
             }
+        }
+    }
+
+    @ViewBuilder private var setPicker: some View {
+        if let next = nextSet {
+            Button {
+                withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
+                    quickSetRaw = next.rawValue
+                }
+            } label: {
+                Image(systemName: next.icon)
+                    // The circled glyph draws at the same diameter as the
+                    // preset circles beside it.
+                    .font(.system(size: Self.presetDiameter, weight: .thin))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 40, height: 44)
+                    .contentShape(Rectangle())
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -588,39 +604,63 @@ struct PlayerScreen: View {
 
     // MARK: bottom bar — sources, EQ, power
 
-    private var bottomBar: some View {
-        HStack(spacing: 0) {
-            powerButton
-            Button { openSettings() } label: {
-                Image(systemName: "gearshape.fill")
-                    .font(.system(size: 20, weight: .medium))
+    private var settingsButton: some View {
+        Button { openSettings() } label: {
+            Image(systemName: "gearshape.fill")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(.secondary)
+                .frame(width: 40, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder private var openChevron: some View {
+        if !availableSets.isEmpty {
+            Button {
+                withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = true }
+            } label: {
+                Image(systemName: "chevron.up")
+                    .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.secondary)
-                    .frame(width: 40, height: 44)
+                    .frame(width: 28, height: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+        }
+    }
+
+    /// Right-handed: power · settings ··· sources ··· EQ · chevron.
+    /// Left-handed, mirrored: chevron · EQ ··· sources ··· settings · power.
+    /// The chevron and EQ ride the thumb's side; sources keep their order.
+    private var bottomBar: some View {
+        HStack(spacing: 0) {
+            if leftHanded {
+                openChevron
+                if !model.currentEqName.isEmpty {
+                    eqMenu
+                        .padding(.leading, 5)
+                }
+            } else {
+                powerButton
+                settingsButton
+            }
             Spacer(minLength: 12)
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)
             }
             Spacer(minLength: 12)
-            if !model.currentEqName.isEmpty {
-                eqMenu
-                    // A whisker of air toward the chevron; the flexible
-                    // spacers keep the sources centred between the groups.
-                    .padding(.trailing, 5)
-            }
-            if !model.volumePresets.isEmpty || model.hasRadioSlots {
-                Button {
-                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = true }
-                } label: {
-                    Image(systemName: "chevron.up")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 44)
-                        .contentShape(Rectangle())
+            if leftHanded {
+                settingsButton
+                powerButton
+            } else {
+                if !model.currentEqName.isEmpty {
+                    eqMenu
+                        // A whisker of air toward the chevron; the flexible
+                        // spacers keep the sources centred between the groups.
+                        .padding(.trailing, 5)
                 }
-                .buttonStyle(.plain)
+                openChevron
             }
         }
         .sensoryFeedback(.selection, trigger: model.source)
