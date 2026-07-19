@@ -123,7 +123,9 @@ struct PlayerScreen: View {
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
-            .glassEffect()
+            // Interactive Liquid Glass: the capsule shimmers and flexes
+            // under touch instead of sitting inert.
+            .glassEffect(.regular.interactive())
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
         }
