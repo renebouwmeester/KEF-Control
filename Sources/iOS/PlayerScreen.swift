@@ -430,6 +430,9 @@ struct PlayerScreen: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                // Air between the chevron and the first source icon — there
+                // is room to give now that EQ is icon-only.
+                Spacer(minLength: 4)
             }
             ForEach(model.visibleSources, id: \.id) { src in
                 sourceButton(src)
