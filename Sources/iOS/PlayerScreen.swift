@@ -19,9 +19,46 @@ struct PlayerScreen: View {
     @State private var titleHeight: CGFloat = 0
     private var titleSurplus: CGFloat { max(0, titleHeight - 30) }
 
+    /// The quick row's three sets, in cycle order.
+    enum QuickSet: String, CaseIterable {
+        case presets, webhooks, radio
+
+        var icon: String {
+            switch self {
+            case .presets:  return "speaker.wave.2.circle"
+            case .webhooks: return "link.circle"
+            case .radio:    return "music.microphone.circle"
+            }
+        }
+    }
+
     /// Which set the quick row shows; persisted so the app opens on the one
     /// you use.
-    @AppStorage("BottomRowShowsRadio") private var showsRadio = false
+    @AppStorage("QuickRowSet") private var quickSetRaw = QuickSet.presets.rawValue
+
+    /// Sets that actually have content, in volume → webhooks → radio order;
+    /// empty ones are skipped by the cycle.
+    private var availableSets: [QuickSet] {
+        var out: [QuickSet] = []
+        if !model.volumePresets.isEmpty { out.append(.presets) }
+        if model.hasWebhooks { out.append(.webhooks) }
+        if model.hasRadioSlots { out.append(.radio) }
+        return out
+    }
+
+    private var currentSet: QuickSet {
+        let sets = availableSets
+        guard let chosen = QuickSet(rawValue: quickSetRaw), sets.contains(chosen)
+        else { return sets.first ?? .presets }
+        return chosen
+    }
+
+    /// The set the switcher button would advance to; nil hides the switcher.
+    private var nextSet: QuickSet? {
+        let sets = availableSets
+        guard sets.count > 1, let i = sets.firstIndex(of: currentSet) else { return nil }
+        return sets[(i + 1) % sets.count]
+    }
 
     /// The quick row is hidden until summoned by the chevron in the source
     /// bar — the Mac panel's presets pattern, phone-sized. Persisted: leaving
@@ -346,22 +383,20 @@ struct PlayerScreen: View {
         }
     }
 
-    /// One row carries both quick-action sets, directly above the source bar.
-    /// The leading button flips between them and always shows the icon of the
-    /// set it would switch TO.
+    /// One row carries the quick-action sets, directly above the source bar.
+    /// The leading button cycles volume → webhooks → radio (skipping empty
+    /// sets) and always shows the icon of the set it would switch TO.
     private var quickRow: some View {
-        let hasPresets = !model.volumePresets.isEmpty
-        let hasRadio = model.hasRadioSlots
-        let radioNow = hasRadio && (showsRadio || !hasPresets)
-        return Group {
-            if hasPresets || hasRadio {
+        Group {
+            if !availableSets.isEmpty {
                 HStack(spacing: 10) {
-                    if hasPresets && hasRadio {
+                    if let next = nextSet {
                         Button {
-                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) { showsRadio.toggle() }
+                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
+                                quickSetRaw = next.rawValue
+                            }
                         } label: {
-                            Image(systemName: radioNow ? "speaker.wave.2.circle"
-                                                       : "music.microphone.circle")
+                            Image(systemName: next.icon)
                                 // The circled glyph draws at the same
                                 // diameter as the preset circles beside it.
                                 .font(.system(size: Self.presetDiameter, weight: .thin))
@@ -373,12 +408,13 @@ struct PlayerScreen: View {
                         .buttonStyle(.plain)
                     }
                     ZStack {
-                        if radioNow {
-                            radioContent
-                                .transition(.move(edge: .trailing).combined(with: .opacity))
-                        } else {
-                            presetContent
-                                .transition(.move(edge: .leading).combined(with: .opacity))
+                        switch currentSet {
+                        case .presets:
+                            presetContent.transition(.blurReplace)
+                        case .webhooks:
+                            webhookContent.transition(.blurReplace)
+                        case .radio:
+                            radioContent.transition(.blurReplace)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -387,6 +423,35 @@ struct PlayerScreen: View {
                 .frame(height: 44)
             }
         }
+    }
+
+    @State private var webhookFires = 0
+
+    /// Numbered circles firing a GET at the slot's URL — stateless, so the
+    /// only feedback is the haptic.
+    private var webhookContent: some View {
+        HStack(spacing: 12) {
+            ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
+                if !url.isEmpty {
+                    Button {
+                        webhookFires += 1
+                        model.fireWebhook(i)
+                    } label: {
+                        ZStack {
+                            Circle().fill(Color.white.opacity(0.08))
+                            Text("\(i + 1)")
+                                .font(.subheadline.weight(.semibold).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: Self.presetDiameter, height: Self.presetDiameter)
+                        .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .sensoryFeedback(.impact(weight: .light), trigger: webhookFires)
     }
 
     /// Circle diameter shared by volume and radio presets, and by the

@@ -21,6 +21,7 @@ final class SettingsSheetSession: ObservableObject {
     @Published var sourceRows: [SourceRow]
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
+    @Published var webhookValues: [String]       // GET URLs, "" = empty
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -33,6 +34,7 @@ final class SettingsSheetSession: ObservableObject {
         }
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
+        webhookValues = model.webhookSlots
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -59,6 +61,7 @@ final class SettingsSheetSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
+        model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -80,6 +83,7 @@ struct SettingsSheet: View {
                 sourcesSection
                 radioSection
                 volumeSection
+                webhookSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -195,6 +199,26 @@ struct SettingsSheet: View {
             }
         } header: {
             Text("Volume presets")
+        }
+    }
+
+    private var webhookSection: some View {
+        Section {
+            ForEach(0..<6, id: \.self) { i in
+                LabeledContent("\(i + 1)") {
+                    TextField("https://…", text: $session.webhookValues[i])
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .multilineTextAlignment(.trailing)
+                        .lineLimit(1)
+                }
+            }
+        } header: {
+            Text("Webhooks")
+        } footer: {
+            Text("Each slot appears as a numbered button in the quick row "
+                 + "and fires a GET request at its URL.")
         }
     }
 }

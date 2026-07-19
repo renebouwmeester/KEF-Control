@@ -164,6 +164,31 @@ final class SpeakerModel: ObservableObject {
 
     var hasRadioSlots: Bool { radioSlots.contains { $0 != nil } }
 
+    // MARK: Webhook quick-fire slots
+
+    /// Six GET-on-tap URLs for the quick row; "" = empty slot.
+    @Published var webhookSlots: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "WebhookSlots") as? [String]) ?? []
+        return Array((raw + Array(repeating: "", count: 6)).prefix(6))
+    }()
+
+    func setWebhookSlots(_ slots: [String]) {
+        var s = slots.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        while s.count < 6 { s.append("") }
+        webhookSlots = Array(s.prefix(6))
+        UserDefaults.standard.set(webhookSlots, forKey: "WebhookSlots")
+    }
+
+    var hasWebhooks: Bool { webhookSlots.contains { !$0.isEmpty } }
+
+    /// Fire-and-forget GET — same semantics as KEF Audio's webhook button.
+    func fireWebhook(_ index: Int) {
+        guard webhookSlots.indices.contains(index),
+              !webhookSlots[index].isEmpty,
+              let url = URL(string: webhookSlots[index]) else { return }
+        Task { _ = try? await URLSession.shared.data(from: url) }
+    }
+
     /// True when the speaker is currently playing this slot's station. airable
     /// overwrites the track title with live metadata, so match on the station
     /// name being a prefix — "NPO Radio 1 - Tour de France" starts with it.
