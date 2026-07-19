@@ -147,10 +147,10 @@ struct PlayerView: View {
                 Rectangle().fill(barTint.opacity(0.25))
                 Rectangle().fill(barTint.opacity(0.9)).frame(width: geo.size.width * fraction)
             }
-            .contentShape(Rectangle().inset(by: -8))   // easier to grab than 2 pt
+            .contentShape(Rectangle().inset(by: -8))   // easier to grab than 3 pt
             .gesture(model.displayCanSeek && length > 0 ? scrubGesture(width: geo.size.width, length: length) : nil)
         }
-        .frame(height: 2)
+        .frame(height: 3)
     }
 
     /// Elapsed / remaining under the progress line, with the stream format as
