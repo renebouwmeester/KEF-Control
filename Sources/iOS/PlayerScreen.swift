@@ -94,9 +94,9 @@ struct PlayerScreen: View {
                     // island's own gap to the screen top.
                     .padding(.top, 10)
                 scrubber
-                    // Spans the card's straight bottom edge: card width
-                    // minus the two 29pt corner radii.
-                    .frame(width: geo.size.width - 32 - 58)
+                    // Inset by one corner radius total — between-the-radii
+                    // read as too trim.
+                    .frame(width: geo.size.width - 32 - 29)
                     .padding(.top, 20)
                 Group {
                     metadata
@@ -257,7 +257,6 @@ struct PlayerScreen: View {
                 // Centred between the timestamps, independent of their widths.
                 formatBadge
             }
-            .padding(.horizontal, 10)
         }
         .opacity(model.displayLength == nil ? 0 : 1)
     }
