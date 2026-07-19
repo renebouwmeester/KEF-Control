@@ -375,6 +375,14 @@ struct PlayerView: View {
     @ViewBuilder private var quickRow: some View {
         if !availableSets.isEmpty {
             HStack(spacing: 6) {
+                ZStack {
+                    switch currentSet {
+                    case .presets:  presetRow
+                    case .webhooks: webhookRow
+                    case .radio:    radioContent
+                    }
+                }
+                .frame(maxWidth: .infinity)
                 if let next = nextSet {
                     Button {
                         withAnimation(.easeInOut(duration: PanelAnim.duration)) {
@@ -391,14 +399,6 @@ struct PlayerView: View {
                     .buttonStyle(.plain)
                     .help(next.help)
                 }
-                ZStack {
-                    switch currentSet {
-                    case .presets:  presetRow
-                    case .webhooks: webhookRow
-                    case .radio:    radioContent
-                    }
-                }
-                .frame(maxWidth: .infinity)
             }
         }
     }
@@ -424,7 +424,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var bottomRow: some View {
@@ -481,7 +481,7 @@ struct PlayerView: View {
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .disabled(model.volumeControlDisabled)
     }
 
@@ -564,7 +564,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
