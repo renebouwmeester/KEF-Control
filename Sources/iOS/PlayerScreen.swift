@@ -60,7 +60,9 @@ struct PlayerScreen: View {
                 .frame(height: 0.5)
             bottomBar
                 .padding(.horizontal, margin)
-                .padding(.bottom, 16)
+                // 23pt keeps the row low without the icons brushing the
+                // home-indicator swipe zone.
+                .padding(.bottom, 23)
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
