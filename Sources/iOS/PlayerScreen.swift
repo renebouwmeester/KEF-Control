@@ -176,9 +176,13 @@ struct PlayerScreen: View {
     private var scrubber: some View {
         VStack(spacing: 4) {
             GeometryReader { geo in
+                // Tinted with a light pastel of the artwork's own hue — same
+                // colour family as the art, guaranteed contrast against the
+                // dark backdrop. Mono covers fall back to white.
+                let barTint = model.accentTint ?? .white
                 ZStack(alignment: .leading) {
-                    Rectangle().fill(.white.opacity(0.25))
-                    Rectangle().fill(.white.opacity(0.8))
+                    Rectangle().fill(barTint.opacity(0.25))
+                    Rectangle().fill(barTint.opacity(0.9))
                         .frame(width: max(0, geo.size.width * fraction))
                 }
                 .frame(height: model.isScrubbing ? 8 : 3)

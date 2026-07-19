@@ -30,6 +30,9 @@ final class SpeakerModel: ObservableObject {
     private var lastSeekCommand = Date.distantPast
     private var lastVolumeCommand = Date.distantPast
     @Published var panelColor = Color(white: 0.13)
+    /// Light pastel of the artwork's dominant hue — accent for elements drawn
+    /// over the dark tint (the iOS progress line). Nil for mono artwork.
+    @Published var accentTint: Color?
     @Published var currentEqName = ""
     @Published var currentEqId = ""
     @Published var eqProfiles: [EQProfileRef] = []
@@ -693,11 +696,13 @@ final class SpeakerModel: ObservableObject {
             artwork = image
             artworkURL = url
             panelColor = dominantDarkTint(from: image) ?? Color(white: 0.13)
+            accentTint = dominantLightTint(from: image)
         } else {
             // leave artworkURL unset so the next poll retries
             artworkURL = nil
             if artwork != nil { artwork = nil }
             panelColor = Color(white: 0.13)
+            accentTint = nil
         }
     }
 

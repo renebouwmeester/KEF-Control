@@ -73,6 +73,25 @@ func templateGlyph(named name: String, size: CGSize) -> PlatformImage? {
 /// Dominant hue of the artwork, darkened to a panel-background level.
 /// Returns nil for effectively monochrome images.
 func dominantDarkTint(from image: PlatformImage) -> Color? {
+    guard let (h, s) = dominantHueSaturation(from: image) else { return nil }
+    #if canImport(AppKit)
+    // Via NSColor so the Mac panel's colour stays byte-identical to before.
+    return Color(nsColor: NSColor(hue: h, saturation: min(s, 0.55),
+                                  brightness: 0.17, alpha: 1))
+    #else
+    return Color(hue: h, saturation: min(s, 0.55), brightness: 0.17)
+    #endif
+}
+
+/// The same dominant hue as a light pastel — a contrast accent for elements
+/// drawn over the dark tint (the iOS progress line). Nil for mono artwork.
+func dominantLightTint(from image: PlatformImage) -> Color? {
+    guard let (h, s) = dominantHueSaturation(from: image) else { return nil }
+    return Color(hue: h, saturation: min(s, 0.4), brightness: 0.95)
+}
+
+/// Dominant hue+saturation over a 12-bucket histogram of colourful pixels.
+private func dominantHueSaturation(from image: PlatformImage) -> (CGFloat, CGFloat)? {
     #if canImport(AppKit)
     let size = 24
     guard let rep = NSBitmapImageRep(
@@ -107,12 +126,7 @@ func dominantDarkTint(from image: PlatformImage) -> Color? {
 
     let n = CGFloat(best.count)
     let avg = NSColor(red: best.r / n, green: best.g / n, blue: best.b / n, alpha: 1)
-    return Color(nsColor: NSColor(
-        hue: avg.hueComponent,
-        saturation: min(avg.saturationComponent, 0.55),
-        brightness: 0.17,
-        alpha: 1
-    ))
+    return (avg.hueComponent, avg.saturationComponent)
     #else
     // Same histogram as the AppKit branch, but via CoreGraphics: downsample
     // into an sRGB bitmap and convert pixels to HSB by hand (UIColor's
@@ -150,7 +164,7 @@ func dominantDarkTint(from image: PlatformImage) -> Color? {
 
     let n = Double(best.count)
     let (h, s, _) = rgbToHSB(r: best.r / n, g: best.g / n, b: best.b / n)
-    return Color(hue: h, saturation: min(s, 0.55), brightness: 0.17)
+    return (CGFloat(h), CGFloat(s))
     #endif
 }
 
