@@ -300,7 +300,9 @@ struct PlayerView: View {
                 onEditingChanged: { model.isDraggingVolume = $0 }
             )
             .controlSize(.small)
-            .tint(Color.appAccent)
+            // Half-white like the iOS slider: a supporting control, not a
+            // second headline.
+            .tint(.white.opacity(0.5))
             .disabled(model.volumeControlDisabled)
 
             Button { model.setVolume(min(model.effectiveMaxVolume, model.displayedVolume + 1)) } label: {
