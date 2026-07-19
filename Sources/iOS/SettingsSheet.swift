@@ -164,8 +164,10 @@ struct SettingsSheet: View {
         // on, the remaining off-toggles grey out until one is freed.
         let visibleCount = session.sourceRows.filter(\.visible).count
         return Section {
-            ForEach($session.sourceRows) { $row in
-                Toggle(row.name, isOn: $row.visible)
+            // Id-based bindings, not ForEach($rows): index bindings get
+            // recreated mid-drag and made reordering lurch sideways.
+            ForEach(session.sourceRows) { row in
+                Toggle(row.name, isOn: visibleBinding(row.id))
                     .disabled(!row.visible && visibleCount >= 4)
             }
             .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
@@ -180,6 +182,17 @@ struct SettingsSheet: View {
                  + "Up to four can be shown: with four selected the others "
                  + "are greyed out until you switch one off.")
         }
+    }
+
+    private func visibleBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { session.sourceRows.first(where: { $0.id == id })?.visible ?? true },
+            set: { value in
+                if let i = session.sourceRows.firstIndex(where: { $0.id == id }) {
+                    session.sourceRows[i].visible = value
+                }
+            }
+        )
     }
 
     private var radioSection: some View {
