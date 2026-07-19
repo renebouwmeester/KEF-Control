@@ -465,6 +465,9 @@ struct PlayerScreen: View {
             Spacer(minLength: 12)
             if !model.currentEqName.isEmpty {
                 eqMenu
+                    // A whisker of air toward the chevron; the flexible
+                    // spacers keep the sources centred between the groups.
+                    .padding(.trailing, 5)
             }
             if !model.volumePresets.isEmpty || model.hasRadioSlots {
                 Button {
