@@ -115,7 +115,7 @@ struct SettingsSheet: View {
                         Spacer()
                         if found.ip == session.ipText {
                             Image(systemName: "checkmark")
-                                .foregroundStyle(Color.appAccent)
+                                .foregroundStyle(Color.phoneAccent)
                         }
                     }
                 }

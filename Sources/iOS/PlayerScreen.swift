@@ -318,11 +318,11 @@ struct PlayerScreen: View {
                 Button { model.setVolume(preset) } label: {
                     Text("\(preset)")
                         .font(.subheadline.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
+                        .foregroundStyle(active ? AnyShapeStyle(Color.phoneAccent)
                                                 : AnyShapeStyle(.secondary))
                         .frame(maxWidth: .infinity, minHeight: 40)
                         .background(
-                            Capsule().fill(active ? Color.appAccent.opacity(0.22)
+                            Capsule().fill(active ? Color.phoneAccent.opacity(0.22)
                                                   : Color.white.opacity(0.08))
                         )
                         .contentShape(Capsule())
@@ -350,7 +350,7 @@ struct PlayerScreen: View {
         let active = model.isPlayingRadio(station)
         return Button { model.playRadio(index) } label: {
             ZStack {
-                Circle().fill(active ? Color.appAccent.opacity(0.26) : Color.white.opacity(0.1))
+                Circle().fill(active ? Color.phoneAccent.opacity(0.26) : Color.white.opacity(0.1))
                 if let art = artworkCache.image(for: station.iconURL) {
                     Image(platformImage: art)
                         .resizable()
@@ -360,11 +360,11 @@ struct PlayerScreen: View {
                 } else {
                     Text(Self.initials(station.title))
                         .font(.footnote)
-                        .foregroundStyle(active ? AnyShapeStyle(Color.appAccent)
+                        .foregroundStyle(active ? AnyShapeStyle(Color.phoneAccent)
                                                 : AnyShapeStyle(.secondary))
                 }
                 if active {
-                    Circle().strokeBorder(Color.appAccent, lineWidth: 1.5)
+                    Circle().strokeBorder(Color.phoneAccent, lineWidth: 1.5)
                 }
             }
             .frame(width: 44, height: 44)
@@ -410,11 +410,11 @@ struct PlayerScreen: View {
                 }
             }
             .font(.system(size: 17, weight: .medium))
-            .foregroundStyle(selected ? AnyShapeStyle(Color.appAccent) : AnyShapeStyle(.secondary))
+            .foregroundStyle(selected ? AnyShapeStyle(Color.phoneAccent) : AnyShapeStyle(.secondary))
             .frame(width: 40, height: 44)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(selected ? Color.appAccent.opacity(0.18) : .clear)
+                    .fill(selected ? Color.phoneAccent.opacity(0.18) : .clear)
             )
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
@@ -461,7 +461,7 @@ struct PlayerScreen: View {
             Image(systemName: "power")
                 .font(.system(size: 17, weight: .medium))
                 .foregroundStyle(model.isStandby ? AnyShapeStyle(.secondary)
-                                                 : AnyShapeStyle(Color.appAccent))
+                                                 : AnyShapeStyle(Color.phoneAccent))
                 .frame(width: 44, height: 44)
                 .contentShape(Rectangle())
         }

@@ -3,6 +3,13 @@
 // settings sheet, and foreground-refresh behaviour.
 import SwiftUI
 
+/// The iOS accent: plain white on the tinted background. The Mac apps keep
+/// their shared blue (`Color.appAccent` in Core) — deliberately not reused
+/// here.
+extension Color {
+    static let phoneAccent = Color.white
+}
+
 @main
 struct KEFControlApp: App {
     @StateObject private var model = SpeakerModel()
