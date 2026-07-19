@@ -354,7 +354,9 @@ struct PlayerScreen: View {
             // unreliable, and the decay doubles as a pleasant linger.
             .foregroundStyle(volumeGlow ? AnyShapeStyle(.white)
                                         : AnyShapeStyle(.secondary))
-            .animation(.easeOut(duration: 0.3), value: volumeGlow)
+            // Quick to light, slow to dim — the fade-out reads as an ember.
+            .animation(volumeGlow ? .easeOut(duration: 0.15)
+                                  : .easeOut(duration: 0.9), value: volumeGlow)
     }
 
     @State private var volumeGlow = false
