@@ -254,6 +254,9 @@ struct SourceOrderInline: View {
             ForEach(session.sourceRows) { row in
                 Toggle(row.name, isOn: visibleBinding(row.id))
                     .disabled(!row.visible && visibleCount >= 4)
+                    // Match the surrounding grouped-Form row colour — plain
+                    // style would otherwise stand out against the section.
+                    .listRowBackground(Color(.secondarySystemGroupedBackground))
             }
             .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
         }
