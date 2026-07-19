@@ -293,14 +293,11 @@ struct PlayerScreen: View {
             // Quieter than the scrubber: the volume sits above the transport
             // as a supporting control, not the headline.
             .tint(.white.opacity(0.5))
-            Image(systemName: "speaker.wave.3.fill")
-                .font(.system(size: 15))
-                .foregroundStyle(.tertiary)
-            // Promoted from a footnote afterthought to the row's readout.
+            // The number is the right bookend — the wave icon added nothing.
             Text("\(model.displayedVolume)")
                 .font(.subheadline.weight(.semibold).monospacedDigit())
                 .frame(minWidth: 30, alignment: .trailing)
-                .foregroundStyle(.white.opacity(0.9))
+                .foregroundStyle(.secondary)
         }
         .disabled(model.volumeControlDisabled)
     }
