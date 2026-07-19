@@ -113,9 +113,11 @@ struct PlayerScreen: View {
         }
         // Card format: top corners rounded, bottom edge straight so the
         // progress line attaches flush as the card's bottom edge.
+        // 29pt matches the glass capsule below (58pt tall, so its radius
+        // is 29) — the 14 read as a different design language.
         .clipShape(UnevenRoundedRectangle(
-            cornerRadii: .init(topLeading: 14, bottomLeading: 0,
-                               bottomTrailing: 0, topTrailing: 14),
+            cornerRadii: .init(topLeading: 29, bottomLeading: 0,
+                               bottomTrailing: 0, topTrailing: 29),
             style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
