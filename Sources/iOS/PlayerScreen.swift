@@ -110,6 +110,8 @@ struct PlayerScreen: View {
                     transport
                     Spacer(minLength: 16)
                     volumeRow
+                        // Same width as the progress bar (one-radius inset).
+                        .frame(width: geo.size.width - 32 - 29)
                     Spacer(minLength: 14)
                         .frame(maxHeight: 27)
                 }
