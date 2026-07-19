@@ -26,7 +26,7 @@ struct PlayerView: View {
                 if model.displayLength != nil {
                     timeRow
                         .padding(.horizontal, 10)
-                        .padding(.top, 5)
+                        .padding(.top, 6)
                 }
             }
             VStack(spacing: 12) {
