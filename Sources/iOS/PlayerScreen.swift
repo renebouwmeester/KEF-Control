@@ -338,9 +338,11 @@ struct PlayerScreen: View {
                         } label: {
                             Image(systemName: radioNow ? "speaker.wave.2.circle"
                                                        : "music.microphone.circle")
-                                .font(.system(size: 20, weight: .medium))
+                                // The circled glyph draws at the same
+                                // diameter as the preset circles beside it.
+                                .font(.system(size: Self.presetDiameter, weight: .thin))
                                 .foregroundStyle(.secondary)
-                                .frame(width: 32, height: 44)
+                                .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                                 .contentTransition(.symbolEffect(.replace))
                         }
@@ -363,25 +365,35 @@ struct PlayerScreen: View {
         }
     }
 
+    /// Circle diameter shared by volume and radio presets, and by the
+    /// picker icons that flip between the two sets.
+    private static let presetDiameter: CGFloat = 40
+
     private var presetContent: some View {
-        HStack(spacing: 8) {
-            ForEach(model.volumePresets, id: \.self) { preset in
+        HStack(spacing: 12) {
+            // The row holds 6 on iOS; a 7th slot set on the Mac keeps its
+            // value, it just doesn't render here.
+            ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
                 Button { model.setVolume(preset) } label: {
-                    Text("\(preset)")
-                        .font(.subheadline.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(active ? AnyShapeStyle(Color.phoneAccent)
-                                                : AnyShapeStyle(.secondary))
-                        .frame(maxWidth: .infinity, minHeight: 40)
-                        .background(
-                            Capsule().fill(active ? Color.phoneAccent.opacity(0.22)
-                                                  : Color.white.opacity(0.08))
-                        )
-                        .contentShape(Capsule())
+                    ZStack {
+                        Circle().fill(active ? Color.phoneAccent.opacity(0.22)
+                                             : Color.white.opacity(0.08))
+                        Text("\(preset)")
+                            .font(.subheadline.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(active ? AnyShapeStyle(Color.phoneAccent)
+                                                    : AnyShapeStyle(.secondary))
+                        if active {
+                            Circle().strokeBorder(Color.phoneAccent, lineWidth: 1.5)
+                        }
+                    }
+                    .frame(width: Self.presetDiameter, height: Self.presetDiameter)
+                    .contentShape(Circle())
                 }
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
+        .frame(maxWidth: .infinity)
         .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .light), trigger: model.displayedVolume)
         .disabled(model.volumeControlDisabled)
@@ -389,7 +401,7 @@ struct PlayerScreen: View {
 
     private var radioContent: some View {
         HStack(spacing: 12) {
-            ForEach(Array(model.radioSlots.enumerated()), id: \.offset) { i, slot in
+            ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
                 }
@@ -419,7 +431,7 @@ struct PlayerScreen: View {
                     Circle().strokeBorder(Color.phoneAccent, lineWidth: 1.5)
                 }
             }
-            .frame(width: 44, height: 44)
+            .frame(width: Self.presetDiameter, height: Self.presetDiameter)
             .contentShape(Circle())
         }
         .buttonStyle(.plain)

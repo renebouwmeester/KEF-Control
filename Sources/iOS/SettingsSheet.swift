@@ -158,7 +158,8 @@ struct SettingsSheet: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                ForEach(0..<SpeakerModel.radioSlotCount, id: \.self) { i in
+                // 6 on iOS; a 7th slot set on the Mac keeps its value.
+                ForEach(0..<6, id: \.self) { i in
                     Picker("Slot \(i + 1)", selection: $session.radioSelection[i]) {
                         Text("—").tag("")
                         ForEach(session.stations, id: \.path) { station in
@@ -178,7 +179,8 @@ struct SettingsSheet: View {
 
     private var volumeSection: some View {
         Section {
-            ForEach(0..<7, id: \.self) { i in
+            // 6 on iOS; a 7th slot set on the Mac keeps its value.
+            ForEach(0..<6, id: \.self) { i in
                 LabeledContent("Preset \(i + 1)") {
                     TextField("—", text: $session.presetValues[i])
                         .keyboardType(.numberPad)
