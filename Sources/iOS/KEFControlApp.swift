@@ -36,15 +36,7 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Artwork tint over the whole screen — the same dominant-hue
-            // color the Mac panel uses — with a whisper of darkening toward
-            // the bottom for depth, so it never washes out to black.
-            model.panelColor
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.6), value: model.panelColor)
-            LinearGradient(colors: [.clear, .black.opacity(0.3)],
-                           startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
+            background
             PlayerScreen(model: model)
         }
         .overlay(alignment: .topTrailing) {
@@ -57,7 +49,7 @@ struct ContentView: View {
                     .frame(width: 34, height: 34)
                     // Sits on the full-bleed artwork, so it needs its own
                     // contrast.
-                    .background(.ultraThinMaterial, in: Circle())
+                    .glassEffect()
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -66,5 +58,30 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsSheet(model: model)
         }
+    }
+
+    /// A heavily blurred, saturated copy of the artwork behind everything —
+    /// the Apple Music full-player treatment. It shifts with the cover
+    /// instead of being one computed color; the panel tint stays as the base
+    /// coat and the no-artwork fallback.
+    private var background: some View {
+        GeometryReader { geo in
+            ZStack {
+                model.panelColor
+                if let art = model.artwork {
+                    Image(platformImage: art)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .saturation(1.5)
+                        // Overscan so the blur never shows darkened edges.
+                        .scaleEffect(1.4)
+                        .blur(radius: 70)
+                        // Legibility: everything on top is thin white text.
+                        .overlay(Color.black.opacity(0.45))
+                }
+            }
+        }
+        .ignoresSafeArea()
     }
 }

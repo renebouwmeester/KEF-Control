@@ -60,27 +60,22 @@ struct PlayerScreen: View {
                 }
                 .padding(.horizontal, margin)
             }
-            // Hairline separating the source bar from the main screen —
-            // full-bleed, like the artwork and progress line.
-            Rectangle()
-                .fill(.white.opacity(0.12))
-                .frame(height: 0.5)
-            // The quick row slides in OVER the source bar, so the screen
-            // above never moves — a temporary swap, not a layout change.
-            ZStack {
-                bottomBar
-                    .padding(.horizontal, margin)
-                    // 23pt keeps the row low without the icons brushing the
-                    // home-indicator swipe zone.
-                    .padding(.bottom, 19)
+            // Floating Liquid Glass control bar; the quick row morphs inside
+            // the same capsule, so the screen above never moves.
+            Group {
                 if quickRowVisible {
                     quickOverlay
-                        .padding(.horizontal, margin)
-                        .padding(.bottom, 19)
-                        .background(.regularMaterial)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .transition(.blurReplace)
+                } else {
+                    bottomBar
+                        .transition(.blurReplace)
                 }
             }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .glassEffect()
+            .padding(.horizontal, 20)
+            .padding(.bottom, 18)
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -224,13 +219,17 @@ struct PlayerScreen: View {
     /// Same styling as the Mac panel: backward/forward.end.fill at .title2,
     /// circled play/pause at 38, 28pt gaps, tight centred cluster — just with
     /// iOS-sized touch targets around the glyphs.
+    @State private var prevTap = 0
+    @State private var nextTap = 0
+
     private var transport: some View {
         HStack(spacing: 28) {
-            Button { model.control("previous") } label: {
+            Button { prevTap += 1; model.control("previous") } label: {
                 Image(systemName: "backward.end.fill")
                     .font(.title2)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
+                    .symbolEffect(.bounce, value: prevTap)
             }
             Button { model.control("pause") } label: {
                 Image(systemName: model.displayedIsPlaying ? "pause.circle.fill" : "play.circle.fill")
@@ -239,11 +238,12 @@ struct PlayerScreen: View {
                     .contentShape(Rectangle())
                     .contentTransition(.symbolEffect(.replace))
             }
-            Button { model.control("next") } label: {
+            Button { nextTap += 1; model.control("next") } label: {
                 Image(systemName: "forward.end.fill")
                     .font(.title2)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
+                    .symbolEffect(.bounce, value: nextTap)
             }
         }
         .frame(maxWidth: .infinity)
@@ -293,7 +293,7 @@ struct PlayerScreen: View {
         HStack(spacing: 10) {
             quickRow
             Button {
-                withAnimation(.snappy(duration: 0.3)) { quickRowVisible = false }
+                withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = false }
             } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(size: 15, weight: .semibold))
@@ -303,7 +303,6 @@ struct PlayerScreen: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(.top, 14).padding(.bottom, 6)
     }
 
     /// One row carries both quick-action sets, directly above the source bar.
@@ -318,7 +317,7 @@ struct PlayerScreen: View {
                 HStack(spacing: 10) {
                     if hasPresets && hasRadio {
                         Button {
-                            withAnimation(.snappy(duration: 0.3)) { showsRadio.toggle() }
+                            withAnimation(.spring(duration: 0.35, bounce: 0.25)) { showsRadio.toggle() }
                         } label: {
                             Image(systemName: radioNow ? "dial.medium" : "radio")
                                 .font(.system(size: 15, weight: .medium))
@@ -431,7 +430,7 @@ struct PlayerScreen: View {
             }
             if !model.volumePresets.isEmpty || model.hasRadioSlots {
                 Button {
-                    withAnimation(.snappy(duration: 0.3)) { quickRowVisible = true }
+                    withAnimation(.spring(duration: 0.35, bounce: 0.25)) { quickRowVisible = true }
                 } label: {
                     Image(systemName: "chevron.up")
                         .font(.system(size: 15, weight: .semibold))
@@ -442,7 +441,6 @@ struct PlayerScreen: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.top, 14).padding(.bottom, 6)
         .sensoryFeedback(.selection, trigger: model.source)
     }
 
