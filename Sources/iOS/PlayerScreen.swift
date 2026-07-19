@@ -48,7 +48,7 @@ struct PlayerScreen: View {
                     .frame(width: geo.size.width, height: geo.size.width)
                     // Tuned so island-bottom -> artwork visually matches the
                     // island's own gap to the screen top.
-                    .padding(.top, 11)
+                    .padding(.top, 10)
                 scrubber
                 Group {
                     metadata
