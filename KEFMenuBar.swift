@@ -1216,7 +1216,7 @@ struct PlayerView: View {
                 .foregroundStyle(.secondary)
             Text(model.isConfigured
                  ? model.api.ip
-                 : "Right-click the menu bar icon →\nSpeaker IP Address…")
+                 : "Right-click the menu bar icon →\nSettings…")
                 .font(.caption)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.tertiary)
@@ -1897,420 +1897,339 @@ final class ShortcutRecorderButton: NSButton {
     @objc func clearAction() { clear() }
 }
 
+// MARK: - Settings window (one tabbed window; grouped forms like System Settings)
+
+/// Hosts the AppKit shortcut recorder inside SwiftUI so the capture logic —
+/// the key monitor, esc/delete handling, the one-recorder-at-a-time rule —
+/// is reused verbatim rather than rewritten.
+struct ShortcutRecorderView: NSViewRepresentable {
+    let button: ShortcutRecorderButton
+    func makeNSView(context: Context) -> ShortcutRecorderButton { button }
+    func updateNSView(_ view: ShortcutRecorderButton, context: Context) {}
+}
+
+/// Everything the Settings window stages. Values are copied in when the window
+/// opens and written back only on Save — the same semantics the old
+/// per-feature windows had, now shared by every tab.
 @MainActor
-final class HotKeysWindowController: NSWindowController, NSWindowDelegate {
-    private let onFinish: () -> Void
-    private let model: SpeakerModel
-    private var stepField: NSTextField!
-    private var presetFields: [NSTextField] = []
-    private var recorders: [(HotKeyAction, ShortcutRecorderButton)] = []
-    private var menuBarVolumeCheck: NSButton!
+final class SettingsSession: ObservableObject {
+    let model: SpeakerModel
+    /// One live AppKit recorder per action; Save reads their staged shortcuts.
+    let recorders: [HotKeyAction: ShortcutRecorderButton]
 
-    private let labelW: CGFloat = 150, valueW: CGFloat = 54, recorderW: CGFloat = 150, clearW: CGFloat = 22
+    struct SourceRow: Identifiable {
+        let id: String
+        let name: String
+        var visible: Bool
+    }
 
-    /// `onFinish` re-registers hotkeys from the saved bindings; it runs on every
-    /// close (Save or Cancel) so the global hotkeys — suspended while the window
-    /// is open so any combo can be re-recorded — are always restored.
-    init(model: SpeakerModel, onFinish: @escaping () -> Void) {
+    @Published var ipText: String
+    @Published var sourceRows: [SourceRow]
+    @Published var presetValues: [String]        // "" = empty slot
+    @Published var volumeStep: String
+    @Published var showVolumeInMenuBar: Bool
+    @Published var radioSelection: [String]      // station path, "" = empty
+    @Published var stations: [SpeakerModel.RadioStation] = []
+    @Published var stationsLoaded = false
+
+    init(model: SpeakerModel) {
         self.model = model
+        var recs: [HotKeyAction: ShortcutRecorderButton] = [:]
+        for action in HotKeyAction.allCases {
+            let button = ShortcutRecorderButton()
+            button.configure(initial: ShortcutStore.shortcut(action))
+            recs[action] = button
+        }
+        recorders = recs
+        ipText = model.speakerIP
+        sourceRows = model.orderedSources.map {
+            SourceRow(id: $0.id, name: $0.name,
+                      visible: !model.hiddenSources.contains($0.id))
+        }
+        presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
+        volumeStep = String(ShortcutStore.volumeStep)
+        showVolumeInMenuBar = model.showVolumeInMenuBar
+        radioSelection = model.radioSlots.map { $0?.path ?? "" }
+    }
+
+    /// Stations already in slots are merged in, so a saved preset survives
+    /// dropping off the speaker's history.
+    func loadStations() async {
+        var found = await model.radioPickerStations()
+        for slot in model.radioSlots.compactMap({ $0 })
+        where !found.contains(where: { $0.path == slot.path }) {
+            found.append(slot)
+        }
+        stations = found
+        stationsLoaded = true
+    }
+
+    func save() {
+        for (action, recorder) in recorders {
+            ShortcutStore.setShortcut(action, recorder.shortcut)
+        }
+        if let step = Int(volumeStep) { ShortcutStore.setVolumeStep(step) }
+        model.setPresetSlots(presetValues.map { Int($0) ?? 0 })
+        model.showVolumeInMenuBar = showVolumeInMenuBar
+        model.setSourceLayout(order: sourceRows.map(\.id),
+                              hidden: Set(sourceRows.filter { !$0.visible }.map(\.id)))
+        model.setRadioSlots(radioSelection.map { path in
+            stations.first { $0.path == path }
+        })
+        model.setSpeakerIP(ipText)
+    }
+}
+
+struct SettingsView: View {
+    @ObservedObject var session: SettingsSession
+    @ObservedObject var discovery: SpeakerDiscovery
+    let onSave: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TabView {
+                speakerTab
+                    .tabItem { Label("Speaker", systemImage: "hifispeaker.2") }
+                sourcesTab
+                    .tabItem { Label("Sources", systemImage: "arrow.up.arrow.down") }
+                radioTab
+                    .tabItem { Label("Radio", systemImage: "radio") }
+                volumeTab
+                    .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
+                hotkeysTab
+                    .tabItem { Label("Hotkeys", systemImage: "keyboard") }
+            }
+            .padding(12)
+            Divider()
+            HStack {
+                Spacer()
+                Button("Cancel", action: onCancel)
+                    .keyboardShortcut(.cancelAction)
+                Button("Save", action: onSave)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(12)
+        }
+        .frame(width: 560, height: 540)
+    }
+
+    // MARK: tabs
+
+    private var speakerTab: some View {
+        Form {
+            Section("Speakers on your network") {
+                if discovery.found.isEmpty {
+                    Text(discovery.isSearching ? "Searching…" : "No speakers found")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(discovery.found) { found in
+                    Button {
+                        session.ipText = found.ip
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(found.name)
+                                Text("\(found.model.isEmpty ? "KEF" : found.model) · \(found.ip)")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            if found.ip == session.ipText {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(Color.appAccent)
+                            }
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            Section("Address") {
+                TextField("IP address or hostname", text: $session.ipText)
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { discovery.start() }
+    }
+
+    private var sourcesTab: some View {
+        // A List, not a Form: grouped Forms don't support row dragging, and
+        // drag-to-reorder beats the old type-a-number ordering.
+        VStack(alignment: .leading, spacing: 8) {
+            List {
+                ForEach(session.sourceRows) { row in
+                    HStack {
+                        Text(row.name)
+                        Spacer()
+                        Toggle("", isOn: visibleBinding(row.id))
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                            .controlSize(.small)
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onMove { session.sourceRows.move(fromOffsets: $0, toOffset: $1) }
+            }
+            .listStyle(.bordered)
+            Text("Drag to reorder — the panel shows inputs in this order.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+        }
+        .padding(16)
+    }
+
+    private func visibleBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { session.sourceRows.first(where: { $0.id == id })?.visible ?? true },
+            set: { value in
+                if let i = session.sourceRows.firstIndex(where: { $0.id == id }) {
+                    session.sourceRows[i].visible = value
+                }
+            }
+        )
+    }
+
+    private var radioTab: some View {
+        Form {
+            if !session.stationsLoaded {
+                Section {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Loading stations from the speaker…")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } else {
+                Section {
+                    ForEach(0..<SpeakerModel.radioSlotCount, id: \.self) { i in
+                        Picker("Slot \(i + 1)", selection: $session.radioSelection[i]) {
+                            Text("—").tag("")
+                            ForEach(session.stations, id: \.path) { station in
+                                Text(station.title).tag(station.path)
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Stations come from the speaker's radio history and "
+                         + "favourites — play one in KEF Connect once and it "
+                         + "appears here.")
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .task { if !session.stationsLoaded { await session.loadStations() } }
+    }
+
+    private var volumeTab: some View {
+        Form {
+            Section("Presets · value and hotkey") {
+                ForEach(Array(HotKeyAction.presetActions.enumerated()), id: \.offset) { i, action in
+                    HStack(spacing: 8) {
+                        Text("Preset \(i + 1)")
+                            .frame(width: 64, alignment: .leading)
+                        // Empty label + prompt, not TextField("—", …): inside a
+                        // Form the title renders as a leading row label, which
+                        // put a stray dash before every field.
+                        TextField("", text: $session.presetValues[i], prompt: Text("—"))
+                            .labelsHidden()
+                            .multilineTextAlignment(.center)
+                            .frame(width: 44)
+                        Spacer()
+                        recorder(for: action)
+                    }
+                }
+            }
+            Section {
+                LabeledContent("Volume step") {
+                    TextField("", text: $session.volumeStep)
+                        .labelsHidden()
+                        .multilineTextAlignment(.center)
+                        .frame(width: 44)
+                }
+                Toggle("Show volume in menu bar", isOn: $session.showVolumeInMenuBar)
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var hotkeysTab: some View {
+        Form {
+            Section {
+                ForEach(HotKeyAction.mediaActions, id: \.self) { action in
+                    HStack {
+                        Text(action.title)
+                        Spacer()
+                        recorder(for: action)
+                    }
+                }
+            } footer: {
+                Text("Click a shortcut, then press the key combo — Esc cancels, "
+                     + "Delete clears. Hotkeys always control the speaker, even "
+                     + "with the panel closed.")
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    @ViewBuilder
+    private func recorder(for action: HotKeyAction) -> some View {
+        if let button = session.recorders[action] {
+            HStack(spacing: 4) {
+                ShortcutRecorderView(button: button)
+                    .frame(width: 140, height: 22)
+                Button {
+                    button.clear()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.tertiary)
+                }
+                .buttonStyle(.plain)
+                .help("Remove shortcut")
+            }
+        }
+    }
+}
+
+@MainActor
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    private let onFinish: () -> Void
+    private let session: SettingsSession
+
+    /// `onFinish` re-registers the global hotkeys; it runs on every close
+    /// (Save or Cancel) because they are suspended while the window is open so
+    /// any combo can be re-recorded.
+    init(model: SpeakerModel, onFinish: @escaping () -> Void) {
         self.onFinish = onFinish
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 620),
+        self.session = SettingsSession(model: model)
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 560, height: 540),
                            styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        win.title = "KEF Control — Hotkeys & Volume Presets"
+        win.title = "KEF Control Settings"
         super.init(window: win)
         win.delegate = self
-        buildUI()
+        let view = SettingsView(
+            session: session,
+            discovery: model.discovery,
+            onSave: { [weak self] in
+                self?.session.save()
+                self?.window?.close()
+            },
+            onCancel: { [weak self] in self?.window?.close() }
+        )
+        win.contentView = NSHostingView(rootView: view)
+        win.setContentSize(NSSize(width: 560, height: 540))
     }
+
+    required init?(coder: NSCoder) { fatalError() }
 
     func windowWillClose(_ notification: Notification) {
         ShortcutRecorderButton.endActiveRecording()
+        session.model.discovery.stop()
         onFinish()
     }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    // MARK: cell builders (fixed widths so both grids' columns align)
-
-    private func label(_ text: String) -> NSTextField {
-        let l = NSTextField(labelWithString: text)
-        l.alignment = .right
-        l.widthAnchor.constraint(equalToConstant: labelW).isActive = true
-        return l
-    }
-    private func header(_ text: String) -> NSTextField {
-        let l = NSTextField(labelWithString: text.uppercased())
-        l.font = .systemFont(ofSize: 11, weight: .semibold)
-        l.textColor = .secondaryLabelColor
-        return l
-    }
-    private func spacer(_ w: CGFloat) -> NSView {
-        let v = NSView()
-        v.widthAnchor.constraint(equalToConstant: w).isActive = true
-        return v
-    }
-    private func recorder(_ action: HotKeyAction) -> ShortcutRecorderButton {
-        let btn = ShortcutRecorderButton()
-        btn.configure(initial: ShortcutStore.shortcut(action))
-        btn.widthAnchor.constraint(equalToConstant: recorderW).isActive = true
-        recorders.append((action, btn))
-        return btn
-    }
-    private func numberField(_ value: Int) -> NSTextField {
-        let f = NSTextField(string: value > 0 ? "\(value)" : "")
-        f.placeholderString = "—"
-        f.alignment = .center
-        f.widthAnchor.constraint(equalToConstant: valueW).isActive = true
-        return f
-    }
-    private func clearButton(for rec: ShortcutRecorderButton) -> NSButton {
-        let b = NSButton()
-        b.image = NSImage(systemSymbolName: "xmark.circle.fill", accessibilityDescription: "Remove shortcut")
-        b.isBordered = false
-        b.imagePosition = .imageOnly
-        b.contentTintColor = .tertiaryLabelColor
-        b.target = rec
-        b.action = #selector(ShortcutRecorderButton.clearAction)
-        b.toolTip = "Remove shortcut"
-        b.widthAnchor.constraint(equalToConstant: clearW).isActive = true
-        return b
-    }
-
-    private func grid(_ rows: [[NSView]]) -> NSGridView {
-        let g = NSGridView(views: rows)
-        g.rowSpacing = 9
-        g.columnSpacing = 12
-        g.column(at: 0).xPlacement = .trailing
-        for i in 0..<g.numberOfRows { g.row(at: i).yPlacement = .center }
-        g.translatesAutoresizingMaskIntoConstraints = false
-        return g
-    }
-
-    private func buildUI() {
-        // Playback & volume — 4 columns [label, (value/step), recorder, clear]
-        var mediaRows: [[NSView]] = HotKeyAction.mediaActions.map {
-            let rec = recorder($0)
-            return [label($0.title), spacer(valueW), rec, clearButton(for: rec)]
-        }
-        stepField = NSTextField(string: "\(ShortcutStore.volumeStep)")
-        stepField.alignment = .center
-        stepField.widthAnchor.constraint(equalToConstant: valueW).isActive = true
-        mediaRows.append([label("Volume Step"), stepField, spacer(recorderW), spacer(clearW)])
-        let mediaGrid = grid(mediaRows)
-
-        // Volume presets — [label, value, recorder, clear]
-        var presetRows: [[NSView]] = []
-        for action in HotKeyAction.presetActions {
-            let field = numberField(model.presetSlots[action.presetIndex!])
-            presetFields.append(field)
-            let rec = recorder(action)
-            presetRows.append([label(action.title), field, rec, clearButton(for: rec)])
-        }
-        let presetGrid = grid(presetRows)
-
-        // Menu bar — staged like everything else here: applied on Save only.
-        menuBarVolumeCheck = NSButton(checkboxWithTitle: "Show volume in menu bar item",
-                                      target: nil, action: nil)
-        menuBarVolumeCheck.state = model.showVolumeInMenuBar ? .on : .off
-        let menuBarGrid = grid([[label("Volume"), menuBarVolumeCheck]])
-
-        let hint = NSTextField(labelWithString:
-            "Click a shortcut field, then press the key combo.  ✕ or Delete removes it · Esc cancels.")
-        hint.font = .systemFont(ofSize: 10)
-        hint.textColor = .tertiaryLabelColor
-
-        let stack = NSStackView(views: [
-            header("Playback & Volume"), mediaGrid,
-            header("Volume Presets  ·  value + shortcut"), presetGrid,
-            header("Menu Bar"), menuBarGrid,
-            hint,
-        ])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 9
-        stack.setCustomSpacing(22, after: mediaGrid)
-        stack.setCustomSpacing(22, after: presetGrid)
-        stack.setCustomSpacing(16, after: menuBarGrid)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelClicked))
-        cancel.bezelStyle = .rounded
-        cancel.keyEquivalent = "\u{1b}"
-        let save = NSButton(title: "Save", target: self, action: #selector(saveClicked))
-        save.bezelStyle = .rounded
-        save.keyEquivalent = "\r"
-        let buttons = NSStackView(views: [cancel, save])
-        buttons.orientation = .horizontal
-        buttons.spacing = 12
-        buttons.translatesAutoresizingMaskIntoConstraints = false
-
-        let content = NSView()
-        content.addSubview(stack)
-        content.addSubview(buttons)
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 24),
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 22),
-            buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -20),
-        ])
-        window?.contentView = content
-        window?.setContentSize(content.fittingSize)
-        window?.initialFirstResponder = content   // don't auto-focus a text field
-    }
-
-    @objc private func saveClicked() {
-        for (action, rec) in recorders { ShortcutStore.setShortcut(action, rec.shortcut) }
-        if let v = Int(stepField.stringValue) { ShortcutStore.setVolumeStep(v) }
-        model.setPresetSlots(presetFields.map { Int($0.stringValue) ?? 0 })
-        model.showVolumeInMenuBar = menuBarVolumeCheck.state == .on
-        window?.close()   // windowWillClose → onFinish re-registers with new bindings
-    }
-
-    @objc private func cancelClicked() {
-        window?.close()   // windowWillClose → onFinish re-registers existing bindings
-    }
-}
-
-// MARK: - Re-order Source Icons window
-
-/// Order + visibility for the bottom row's input buttons. Staged behind
-/// Save/Cancel, like the hotkeys window.
-final class SourceOrderWindowController: NSWindowController, NSWindowDelegate {
-    private let model: SpeakerModel
-    private var rows: [(id: String, order: NSTextField, show: NSButton)] = []
-
-    private let labelW: CGFloat = 130, orderW: CGFloat = 54
-
-    init(model: SpeakerModel) {
-        self.model = model
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 380, height: 380),
-                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        win.title = "KEF Control — Source Icons"
-        super.init(window: win)
-        win.delegate = self
-        buildUI()
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    private func buildUI() {
-        var gridRows: [[NSView]] = []
-        // Listed in the CURRENT order, so the numbers read 1..n top to bottom
-        // and the window mirrors what's on screen.
-        for (i, src) in model.orderedSources.enumerated() {
-            let name = NSTextField(labelWithString: src.name)
-            name.alignment = .right
-            name.widthAnchor.constraint(equalToConstant: labelW).isActive = true
-
-            let order = NSTextField(string: "\(i + 1)")
-            order.alignment = .center
-            order.widthAnchor.constraint(equalToConstant: orderW).isActive = true
-
-            let show = NSButton(checkboxWithTitle: "Show", target: nil, action: nil)
-            show.state = model.hiddenSources.contains(src.id) ? .off : .on
-
-            rows.append((src.id, order, show))
-            gridRows.append([name, order, show])
-        }
-
-        let g = NSGridView(views: gridRows)
-        g.rowSpacing = 9
-        g.columnSpacing = 12
-        g.column(at: 0).xPlacement = .trailing
-        for i in 0..<g.numberOfRows { g.row(at: i).yPlacement = .center }
-        g.translatesAutoresizingMaskIntoConstraints = false
-
-        let head = NSTextField(labelWithString: "ORDER  ·  VISIBILITY")
-        head.font = .systemFont(ofSize: 11, weight: .semibold)
-        head.textColor = .secondaryLabelColor
-
-        let hint = NSTextField(labelWithString:
-            "Lowest number appears leftmost. Duplicates keep their current relative order.")
-        hint.font = .systemFont(ofSize: 10)
-        hint.textColor = .tertiaryLabelColor
-
-        let stack = NSStackView(views: [head, g, hint])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 9
-        stack.setCustomSpacing(16, after: g)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelClicked))
-        cancel.bezelStyle = .rounded
-        cancel.keyEquivalent = "\u{1b}"
-        let save = NSButton(title: "Save", target: self, action: #selector(saveClicked))
-        save.bezelStyle = .rounded
-        save.keyEquivalent = "\r"
-        let buttons = NSStackView(views: [cancel, save])
-        buttons.orientation = .horizontal
-        buttons.spacing = 12
-        buttons.translatesAutoresizingMaskIntoConstraints = false
-
-        let content = NSView()
-        content.addSubview(stack)
-        content.addSubview(buttons)
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 24),
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 22),
-            buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -20),
-        ])
-        window?.contentView = content
-        window?.setContentSize(content.fittingSize)
-        window?.initialFirstResponder = content
-    }
-
-    @objc private func saveClicked() {
-        // Blank or non-numeric sorts to the end; ties break on the row's
-        // current position, so the result is always deterministic and the user
-        // never gets an error dialog for sloppy numbering.
-        let entries = rows.enumerated().map { i, r in
-            (id: r.id, rank: Int(r.order.stringValue.trimmingCharacters(in: .whitespaces)) ?? Int.max,
-             pos: i, show: r.show.state == .on)
-        }
-        let order = entries
-            .sorted { $0.rank == $1.rank ? $0.pos < $1.pos : $0.rank < $1.rank }
-            .map(\.id)
-        model.setSourceLayout(order: order, hidden: Set(entries.filter { !$0.show }.map(\.id)))
-        window?.close()
-    }
-
-    @objc private func cancelClicked() { window?.close() }
-}
-
-// MARK: - Radio Presets window
-
-/// Five quick-play slots, each picked from the stations the speaker already
-/// knows (its airable radio history + favourites). Staged behind Save/Cancel.
-final class RadioPresetsWindowController: NSWindowController, NSWindowDelegate {
-    private let model: SpeakerModel
-    private var popups: [NSPopUpButton] = []
-    private var stations: [SpeakerModel.RadioStation] = []
-    private var status: NSTextField!
-
-    private let labelW: CGFloat = 60, popupW: CGFloat = 300
-
-    init(model: SpeakerModel) {
-        self.model = model
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 460, height: 300),
-                           styleMask: [.titled, .closable], backing: .buffered, defer: false)
-        win.title = "KEF Control — Radio Presets"
-        super.init(window: win)
-        win.delegate = self
-        buildUI()
-        loadStations()
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    private func buildUI() {
-        var rows: [[NSView]] = []
-        for i in 0..<SpeakerModel.radioSlotCount {
-            let l = NSTextField(labelWithString: "Slot \(i + 1)")
-            l.alignment = .right
-            l.widthAnchor.constraint(equalToConstant: labelW).isActive = true
-
-            let p = NSPopUpButton()
-            p.widthAnchor.constraint(equalToConstant: popupW).isActive = true
-            p.addItem(withTitle: "—")            // empty
-            popups.append(p)
-            rows.append([l, p])
-        }
-
-        let g = NSGridView(views: rows)
-        g.rowSpacing = 9
-        g.columnSpacing = 12
-        g.column(at: 0).xPlacement = .trailing
-        for i in 0..<g.numberOfRows { g.row(at: i).yPlacement = .center }
-        g.translatesAutoresizingMaskIntoConstraints = false
-
-        status = NSTextField(labelWithString: "Loading stations from the speaker…")
-        status.font = .systemFont(ofSize: 10)
-        status.textColor = .tertiaryLabelColor
-
-        let hint = NSTextField(labelWithString:
-            "Stations come from the speaker's own radio history and favourites. "
-            + "Play a station once in KEF Connect and it will appear here.")
-        hint.font = .systemFont(ofSize: 10)
-        hint.textColor = .tertiaryLabelColor
-        hint.preferredMaxLayoutWidth = 380
-        hint.lineBreakMode = .byWordWrapping
-        hint.usesSingleLineMode = false
-
-        let stack = NSStackView(views: [g, status, hint])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 9
-        stack.setCustomSpacing(16, after: g)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        let cancel = NSButton(title: "Cancel", target: self, action: #selector(cancelClicked))
-        cancel.bezelStyle = .rounded
-        cancel.keyEquivalent = "\u{1b}"
-        let save = NSButton(title: "Save", target: self, action: #selector(saveClicked))
-        save.bezelStyle = .rounded
-        save.keyEquivalent = "\r"
-        let buttons = NSStackView(views: [cancel, save])
-        buttons.orientation = .horizontal
-        buttons.spacing = 12
-        buttons.translatesAutoresizingMaskIntoConstraints = false
-
-        let content = NSView()
-        content.addSubview(stack)
-        content.addSubview(buttons)
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: content.topAnchor, constant: 24),
-            stack.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 24),
-            stack.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 22),
-            buttons.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -24),
-            buttons.bottomAnchor.constraint(equalTo: content.bottomAnchor, constant: -20),
-        ])
-        window?.contentView = content
-        window?.setContentSize(content.fittingSize)
-        window?.initialFirstResponder = content
-    }
-
-    /// Browsing airable is a network round trip, so the popups fill in async.
-    /// Anything already in a slot is merged in, so a saved station survives
-    /// even if it has since dropped off the speaker's history.
-    private func loadStations() {
-        Task { @MainActor in
-            var found = await model.radioPickerStations()
-            for slot in model.radioSlots.compactMap({ $0 })
-            where !found.contains(where: { $0.path == slot.path }) {
-                found.append(slot)
-            }
-            stations = found
-            for (i, p) in popups.enumerated() {
-                p.removeAllItems()
-                p.addItem(withTitle: "—")
-                for s in stations { p.addItem(withTitle: s.title) }
-                if let cur = model.radioSlots.indices.contains(i) ? model.radioSlots[i] : nil,
-                   let idx = stations.firstIndex(where: { $0.path == cur.path }) {
-                    p.selectItem(at: idx + 1)          // +1 for the "—" row
-                }
-            }
-            status.stringValue = stations.isEmpty
-                ? "No stations found — the speaker's radio history is empty."
-                : "\(stations.count) station\(stations.count == 1 ? "" : "s") available."
-        }
-    }
-
-    @objc private func saveClicked() {
-        let slots: [SpeakerModel.RadioStation?] = popups.map { p in
-            let i = p.indexOfSelectedItem - 1        // -1 for the "—" row
-            return stations.indices.contains(i) ? stations[i] : nil
-        }
-        model.setRadioSlots(slots)
-        window?.close()
-    }
-
-    @objc private func cancelClicked() { window?.close() }
 }
 
 // MARK: - App shell: custom status item + panel flush with the menu bar
@@ -2329,9 +2248,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var stateSink: AnyCancellable?
     private var outsideClickMonitor: Any?
     private var lastPanelClose = Date.distantPast
-    private var hotKeysWC: HotKeysWindowController?
-    private var sourceOrderWC: SourceOrderWindowController?
-    private var radioPresetsWC: RadioPresetsWindowController?
+    private var settingsWC: SettingsWindowController?
 
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -2445,22 +2362,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if NSApp.currentEvent?.type == .rightMouseUp {
             closePanel()
             let menu = NSMenu()
-            let hotkeys = NSMenuItem(title: "Hotkeys & Volume Presets…",
-                                     action: #selector(editHotKeys), keyEquivalent: "")
-            hotkeys.target = self
-            menu.addItem(hotkeys)
-            let order = NSMenuItem(title: "Re-order Source Icons…",
-                                   action: #selector(editSourceOrder), keyEquivalent: "")
-            order.target = self
-            menu.addItem(order)
-            let radio = NSMenuItem(title: "Radio Presets…",
-                                   action: #selector(editRadioPresets), keyEquivalent: "")
-            radio.target = self
-            menu.addItem(radio)
-            let ipItem = NSMenuItem(title: "Speaker IP Address…",
-                                    action: #selector(editSpeakerIP), keyEquivalent: "")
-            ipItem.target = self
-            menu.addItem(ipItem)
+            let settings = NSMenuItem(title: "Settings…",
+                                      action: #selector(openSettings), keyEquivalent: ",")
+            settings.target = self
+            menu.addItem(settings)
             menu.addItem(.separator())
             let quit = NSMenuItem(title: "Quit KEF Control",
                                   action: #selector(quitApp), keyEquivalent: "q")
@@ -2478,103 +2383,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.terminate(nil)
     }
 
-    @objc private func editRadioPresets() {
-        radioPresetsWC = RadioPresetsWindowController(model: model)
-        NSApp.activate(ignoringOtherApps: true)
-        radioPresetsWC?.window?.center()
-        radioPresetsWC?.showWindow(nil)
-        radioPresetsWC?.window?.makeKeyAndOrderFront(nil)
-    }
-
-    @objc private func editSourceOrder() {
-        sourceOrderWC = SourceOrderWindowController(model: model)
-        NSApp.activate(ignoringOtherApps: true)
-        sourceOrderWC?.window?.center()
-        sourceOrderWC?.showWindow(nil)
-        sourceOrderWC?.window?.makeKeyAndOrderFront(nil)
-    }
-
-    @objc private func editHotKeys() {
-        // suspend global hotkeys so any combo (incl. currently-bound ones) can be
-        // re-recorded; onFinish restores them when the window closes.
+    @objc private func openSettings() {
+        // Suspend global hotkeys while the window is open so any combo —
+        // including currently bound ones — can be re-recorded; onFinish
+        // restores them from the saved bindings on close.
         HotKeyCenter.shared.suspend()
-        hotKeysWC = HotKeysWindowController(model: model) { [weak self] in self?.applyHotKeys() }
+        settingsWC = SettingsWindowController(model: model) { [weak self] in self?.applyHotKeys() }
         NSApp.activate(ignoringOtherApps: true)
-        hotKeysWC?.window?.center()
-        hotKeysWC?.showWindow(nil)
-        hotKeysWC?.window?.makeKeyAndOrderFront(nil)
-    }
-
-    @objc private func editSpeakerIP() {
-        let alert = NSAlert()
-        alert.messageText = "Speaker IP Address"
-        alert.informativeText = "Pick a speaker found on your network, "
-            + "or enter an address by hand."
-
-        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: 300, height: 25))
-        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
-        field.stringValue = model.speakerIP
-        field.placeholderString = "192.168.1.x"
-
-        // Choosing a speaker just fills the field, so the address stays
-        // visible and editable before saving.
-        let fill = FillFieldFromPopup(field: field, model: model)
-        popup.target = fill
-        popup.action = #selector(FillFieldFromPopup.picked(_:))
-        popupFiller = fill
-
-        func reload() {
-            let found = model.discovery.found
-            let selected = popup.indexOfSelectedItem
-            popup.removeAllItems()
-            popup.addItem(withTitle: found.isEmpty
-                          ? (model.discovery.isSearching ? "Searching…" : "No speakers found")
-                          : "Select a speaker…")
-            for f in found { popup.addItem(withTitle: f.label) }
-            popup.isEnabled = !found.isEmpty
-            if selected > 0, selected < popup.numberOfItems { popup.selectItem(at: selected) }
-        }
-        reload()
-        model.discovery.start()
-        // Results arrive on the main queue, which NSAlert's modal loop still
-        // services, so the list fills in while the sheet is open.
-        let sink = model.discovery.$found.receive(on: RunLoop.main).sink { _ in reload() }
-
-        let stack = NSStackView(views: [popup, field])
-        stack.orientation = .vertical
-        stack.alignment = .leading
-        stack.spacing = 10
-        stack.frame = NSRect(origin: .zero, size: stack.fittingSize)
-        alert.accessoryView = stack
-
-        alert.addButton(withTitle: "Save")
-        alert.addButton(withTitle: "Cancel")
-        NSApp.activate(ignoringOtherApps: true)
-        alert.window.initialFirstResponder = field
-        let response = alert.runModal()
-        sink.cancel()
-        popupFiller = nil
-        model.discovery.stop()
-        if response == .alertFirstButtonReturn {
-            model.setSpeakerIP(field.stringValue)
-        }
-    }
-
-    /// NSPopUpButton needs an ObjC target; kept alive for the sheet's lifetime.
-    private var popupFiller: FillFieldFromPopup?
-
-    @MainActor
-    final class FillFieldFromPopup: NSObject {
-        private let field: NSTextField
-        private let model: SpeakerModel
-        init(field: NSTextField, model: SpeakerModel) {
-            self.field = field; self.model = model
-        }
-        @objc func picked(_ sender: NSPopUpButton) {
-            let i = sender.indexOfSelectedItem - 1      // -1 for the header row
-            guard model.discovery.found.indices.contains(i) else { return }
-            field.stringValue = model.discovery.found[i].ip
-        }
+        settingsWC?.window?.center()
+        settingsWC?.showWindow(nil)
+        settingsWC?.window?.makeKeyAndOrderFront(nil)
     }
 
     @objc fileprivate func togglePanel() {

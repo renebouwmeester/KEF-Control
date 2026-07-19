@@ -78,15 +78,19 @@ To launch it at login, add it in System Settings → General → Login Items.
 automatically if it finds exactly one.
 
 If you have several speakers — or none is found — **right-click the menu bar
-icon → Speaker IP Address…**, which lists everything discovered on the network
-by name and model ("KEF LS60 — LS60 Wireless"). You can also type an address
-by hand; a static DHCP lease is worth setting up so it doesn't move.
+icon → Settings…** The Speaker tab lists everything discovered on the network
+by name and model ("KEF LS60 — LS60 Wireless"); you can also type an address
+by hand. A static DHCP lease is worth setting up so it doesn't move.
 
-The right-click menu also has:
+Everything else lives in the same Settings window, one tab each:
 
-- **Hotkeys & Volume Presets…** — global shortcuts and the seven volume presets
-- **Radio Presets…** — assign stations to the quick-play row
-- **Re-order Source Icons…** — reorder and hide inputs
+- **Sources** — drag to reorder the input buttons, toggle to hide the ones
+  your model doesn't have
+- **Radio** — assign stations to the quick-play row
+- **Volume** — the seven volume presets and their hotkeys
+- **Hotkeys** — global playback and volume shortcuts
+
+Changes apply when you press Save.
 
 ### Radio presets
 
