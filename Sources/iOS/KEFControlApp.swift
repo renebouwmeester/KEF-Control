@@ -29,13 +29,15 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            // Artwork-tinted wash fading toward black — the Apple Music
-            // full-player treatment, driven by the same dominant-hue tint the
-            // Mac panel uses.
-            LinearGradient(colors: [model.panelColor, Color(white: 0.04)],
-                           startPoint: .top, endPoint: .bottom)
+            // Artwork tint over the whole screen — the same dominant-hue
+            // color the Mac panel uses — with a whisper of darkening toward
+            // the bottom for depth, so it never washes out to black.
+            model.panelColor
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.6), value: model.panelColor)
+            LinearGradient(colors: [.clear, .black.opacity(0.3)],
+                           startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
             PlayerScreen(model: model)
         }
         .overlay(alignment: .topTrailing) {
