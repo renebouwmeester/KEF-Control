@@ -83,6 +83,12 @@ struct PlayerScreen: View {
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
+            if let album = model.displayAlbum {
+                Text(album)
+                    .font(.footnote)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+            }
             // Stream format as a quiet bordered badge, like Apple Music's
             // Lossless pill: "Roon · 96 kHz / 24-bit", "Spotify · Lossless".
             if let format = model.audioFormatText, model.showsKEFStream {
