@@ -124,7 +124,8 @@ struct PlayerScreen: View {
         VStack(spacing: 7) {
             Text(model.displayTitle)
                 .font(.title3.weight(.semibold))
-                .lineLimit(1)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
             if let artist = model.displayArtist {
                 Text(artist)
                     .font(.body)
