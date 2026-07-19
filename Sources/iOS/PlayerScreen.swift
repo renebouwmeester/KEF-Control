@@ -472,6 +472,9 @@ struct PlayerScreen: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // Bottom-anchored menus open upward and iOS reverses their items by
+        // default, which flipped the alphabetical order; keep it as declared.
+        .menuOrder(.fixed)
     }
 
     private var powerButton: some View {
