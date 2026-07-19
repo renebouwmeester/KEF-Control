@@ -85,14 +85,17 @@ struct PlayerScreen: View {
                 statusView(icon: "power", title: "Standby", detail: nil)
                 Spacer()
             } else {
-                // Full width, top corners rounded; the progress line below
-                // runs the same width, forming the straight bottom edge.
+                // A card sharing the glass capsule's geometry: same side
+                // margins (16pt), same 29pt corner radius. The progress bar
+                // floats free underneath.
                 artworkHero
-                    .frame(width: geo.size.width, height: geo.size.width)
+                    .frame(width: geo.size.width - 32, height: geo.size.width - 32)
                     // Tuned so island-bottom -> artwork visually matches the
                     // island's own gap to the screen top.
                     .padding(.top, 10)
                 scrubber
+                    .frame(width: geo.size.width - 32)
+                    .padding(.top, 20)
                 Group {
                     metadata
                         .padding(.top, 27)
@@ -157,14 +160,9 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        // Card format: top corners rounded, bottom edge straight so the
-        // progress line attaches flush as the card's bottom edge.
-        // 29pt matches the glass capsule below (58pt tall, so its radius
-        // is 29) — the 14 read as a different design language.
-        .clipShape(UnevenRoundedRectangle(
-            cornerRadii: .init(topLeading: 29, bottomLeading: 0,
-                               bottomTrailing: 0, topTrailing: 29),
-            style: .continuous))
+        // 29pt continuous corners — the same radius as the glass capsule,
+        // so card and bar read as one design family.
+        .clipShape(RoundedRectangle(cornerRadius: 29, style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
@@ -232,13 +230,13 @@ struct PlayerScreen: View {
                 // dark backdrop. Mono covers fall back to white.
                 let barTint = model.accentTint ?? .white
                 ZStack(alignment: .leading) {
-                    Rectangle().fill(barTint.opacity(0.25))
-                    Rectangle().fill(barTint.opacity(0.9))
+                    Capsule().fill(barTint.opacity(0.25))
+                    Capsule().fill(barTint.opacity(0.9))
                         .frame(width: max(0, geo.size.width * fraction))
                 }
                 .frame(height: model.isScrubbing ? 8 : 3)
-                // Grow downward: the top edge stays flush with the artwork.
-                .frame(maxHeight: .infinity, alignment: .top)
+                // Free-floating now — thicken symmetrically under the finger.
+                .frame(maxHeight: .infinity)
                 .animation(.easeOut(duration: 0.15), value: model.isScrubbing)
                 .contentShape(Rectangle().inset(by: -12))
                 .gesture(scrubGesture(width: geo.size.width))
