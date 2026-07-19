@@ -42,12 +42,14 @@ struct PlayerScreen: View {
                 statusView(icon: "power", title: "Standby", detail: nil)
                 Spacer()
             } else {
+                // Inset card over the blurred backdrop; the progress line
+                // below shares its width, forming the card's bottom edge.
+                let cardWidth = geo.size.width - margin * 2
                 artworkHero
-                    .frame(width: geo.size.width, height: geo.size.width)
+                    .frame(width: cardWidth, height: cardWidth)
                     .padding(.top, 8)
-                // Attached to the artwork's bottom edge, full width like the
-                // artwork itself.
                 scrubber
+                    .frame(width: cardWidth)
                 Group {
                     metadata
                         .padding(.top, 26)
@@ -109,10 +111,12 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        // Square edges — rounding was tried twice (all corners, then top
-        // only) and rejected; only the paused recede keeps its card corners.
-        .clipShape(RoundedRectangle(cornerRadius: model.displayedIsPlaying ? 0 : 20,
-                                    style: .continuous))
+        // Card format: top corners rounded, bottom edge straight so the
+        // progress line attaches flush as the card's bottom edge.
+        .clipShape(UnevenRoundedRectangle(
+            cornerRadii: .init(topLeading: 14, bottomLeading: 0,
+                               bottomTrailing: 0, topTrailing: 14),
+            style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
@@ -199,7 +203,7 @@ struct PlayerScreen: View {
                 // Centred between the timestamps, independent of their widths.
                 formatBadge
             }
-            .padding(.horizontal, 10)
+            .padding(.horizontal, 4)
         }
         .opacity(model.displayLength == nil ? 0 : 1)
     }
