@@ -42,15 +42,15 @@ struct PlayerScreen: View {
                 scrubber
                 Group {
                     metadata
-                        .padding(.top, 10)
-                    // Slack on both sides of the controls block, so it floats
-                    // between the metadata and the quick row instead of
-                    // hugging the metadata.
+                        .padding(.top, 26)
+                    // All the slack lives above the controls block: the fixed
+                    // gap below parks volume + transport near the quick row.
                     Spacer(minLength: 18)
                     volumeRow
                     transport
                         .padding(.top, 14)
                     Spacer(minLength: 14)
+                        .frame(maxHeight: 24)
                     quickRow
                         .padding(.bottom, 18)
                 }
