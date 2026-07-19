@@ -57,9 +57,8 @@ struct PlayerScreen: View {
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
-        // The artwork runs under the status bar / Dynamic Island; everything
-        // below keeps its margins.
-        .ignoresSafeArea(edges: .top)
+        // The artwork starts at the top safe-area edge: below the Dynamic
+        // Island, with the same breathing room the island has above it.
         .sensoryFeedback(.impact(weight: .light), trigger: model.isPlaying)
     }
 
