@@ -374,7 +374,11 @@ struct PlayerView: View {
     /// exists.
     @ViewBuilder private var quickRow: some View {
         if !availableSets.isEmpty {
-            HStack(spacing: 6) {
+            HStack(spacing: 0) {
+                // Fixed six-slot grid anchored at the row's left edge; a
+                // partial set right-aligns inside it, so its last icon lands
+                // exactly where slot 6 sits. The Spacer keeps a natural gap
+                // to the picker.
                 ZStack {
                     switch currentSet {
                     case .presets:  presetRow
@@ -382,7 +386,8 @@ struct PlayerView: View {
                     case .radio:    radioContent
                     }
                 }
-                .frame(maxWidth: .infinity)
+                .frame(width: Self.quickDiameter * 6 + 9 * 5, alignment: .trailing)
+                Spacer(minLength: 8)
                 if let next = nextSet {
                     Button {
                         withAnimation(.easeInOut(duration: PanelAnim.duration)) {
@@ -406,7 +411,7 @@ struct PlayerView: View {
     /// Numbered circles firing a GET at the slot's URL; the URL itself shows
     /// as the tooltip.
     private var webhookRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
                     Button { model.fireWebhook(i) } label: {
@@ -424,8 +429,7 @@ struct PlayerView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
+            }
 
     private var bottomRow: some View {
         HStack(spacing: 2) {
@@ -458,7 +462,7 @@ struct PlayerView: View {
     }
 
     private var presetRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             // Circles like the webhook and radio buttons; 6 shown, like iOS.
             ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
@@ -481,8 +485,7 @@ struct PlayerView: View {
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .disabled(model.volumeControlDisabled)
+                .disabled(model.volumeControlDisabled)
     }
 
     private func eqMenu(maxWidth: CGFloat) -> some View {
@@ -557,15 +560,14 @@ struct PlayerView: View {
     /// row's rhythm. Hidden entirely when no slot is set, so the panel is
     /// unchanged for anyone not using it.
     private var radioContent: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 9) {
             ForEach(Array(model.radioSlots.prefix(6).enumerated()), id: \.offset) { i, slot in
                 if let station = slot {
                     radioButton(i, station)
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
+            }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
         let active = model.isPlayingRadio(station)

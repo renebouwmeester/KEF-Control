@@ -389,7 +389,11 @@ struct PlayerScreen: View {
     private var quickRow: some View {
         Group {
             if !availableSets.isEmpty {
-                HStack(spacing: 8) {
+                HStack(spacing: 0) {
+                    // Fixed six-slot grid anchored at the row's left edge; a
+                    // partial set right-aligns inside it, so its last icon
+                    // lands exactly where slot 6 sits. The Spacer keeps a
+                    // natural gap to the picker.
                     ZStack {
                         switch currentSet {
                         case .presets:
@@ -400,8 +404,9 @@ struct PlayerScreen: View {
                             radioContent.transition(.blurReplace)
                         }
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(width: Self.presetDiameter * 6 + 9 * 5, alignment: .trailing)
                     .clipped()
+                    Spacer(minLength: 8)
                     if let next = nextSet {
                         Button {
                             withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
@@ -450,8 +455,7 @@ struct PlayerScreen: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .sensoryFeedback(.impact(weight: .light), trigger: webhookFires)
+                .sensoryFeedback(.impact(weight: .light), trigger: webhookFires)
     }
 
     /// Circle diameter shared by volume and radio presets, and by the
@@ -482,8 +486,7 @@ struct PlayerScreen: View {
                 .disabled(preset > model.effectiveMaxVolume)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-        .buttonStyle(.plain)
+                .buttonStyle(.plain)
         .sensoryFeedback(.impact(weight: .light), trigger: model.displayedVolume)
         .disabled(model.volumeControlDisabled)
     }
@@ -496,8 +499,7 @@ struct PlayerScreen: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .trailing)
-    }
+            }
 
     private func radioButton(_ index: Int, _ station: SpeakerModel.RadioStation) -> some View {
         let active = model.isPlayingRadio(station)
