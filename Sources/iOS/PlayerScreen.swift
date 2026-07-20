@@ -90,10 +90,6 @@ struct PlayerScreen: View {
                 // A card sharing the glass capsule's geometry: same side
                 // margins (16pt), same 29pt corner radius. The progress bar
                 // floats free underneath.
-                Text("Stefan")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 6)
                 artworkHero
                     .frame(width: geo.size.width - 32, height: geo.size.width - 32)
                     // Tuned so island-bottom -> artwork visually matches the
