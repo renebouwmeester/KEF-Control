@@ -198,8 +198,12 @@ final class SpeakerModel: ObservableObject {
         task.arguments = ["run", name]
         try? task.run()
         #else
+        // x-callback: Shortcuts hops back to the app (kefcontrol://) the
+        // moment the shortcut finishes, succeeds or not.
         guard let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "shortcuts://run-shortcut?name=\(encoded)") else { return }
+              let url = URL(string: "shortcuts://x-callback-url/run-shortcut?name=\(encoded)"
+                            + "&x-success=kefcontrol://&x-cancel=kefcontrol://&x-error=kefcontrol://")
+        else { return }
         UIApplication.shared.open(url)
         #endif
     }

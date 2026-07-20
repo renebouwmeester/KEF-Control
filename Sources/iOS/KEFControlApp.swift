@@ -42,6 +42,9 @@ struct ContentView: View {
         .sheet(isPresented: $showSettings) {
             SettingsSheet(model: model)
         }
+        // Landing pad for the shortcuts x-callback return; the arrival
+        // itself is the point.
+        .onOpenURL { _ in }
     }
 
     /// A heavily blurred, saturated copy of the artwork behind everything —

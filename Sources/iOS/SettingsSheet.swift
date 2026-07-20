@@ -286,8 +286,9 @@ struct SettingsSheet: View {
             Text("Shortcuts")
         } footer: {
             Text("Each slot appears as a numbered button in the quick row "
-                 + "and runs that Apple Shortcut. Running briefly opens the "
-                 + "Shortcuts app — iOS offers no background way.")
+                 + "and runs that Apple Shortcut. iOS has to hop through the "
+                 + "Shortcuts app — you return here automatically when it "
+                 + "finishes.")
         }
     }
 }

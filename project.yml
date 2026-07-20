@@ -34,6 +34,11 @@ targets:
           network.
         NSBonjourServices:
           - _kef-info._tcp
+        # Return address for shortcuts:// x-callback round trips.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.rene.kef-control-lite
+            CFBundleURLSchemes:
+              - kefcontrol
         # Only exempt encryption (HTTPS to the speaker, HMAC signing) — skips
         # the export-compliance question on every TestFlight upload.
         ITSAppUsesNonExemptEncryption: false
