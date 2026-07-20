@@ -100,7 +100,7 @@ struct PlayerScreen: View {
                     .padding(.top, 13)
                 Group {
                     metadata
-                        .padding(.top, 27)
+                        .padding(.top, 28)
                         .offset(y: -titleSurplus / 5)
                     // All the slack lives above the controls block: the fixed
                     // gap below parks volume + transport near the quick row.
