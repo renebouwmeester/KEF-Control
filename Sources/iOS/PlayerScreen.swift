@@ -97,7 +97,7 @@ struct PlayerScreen: View {
                     // Inset by one corner radius total — between-the-radii
                     // read as too trim.
                     .frame(width: geo.size.width - 32 - 29)
-                    .padding(.top, 13)
+                    .padding(.top, 12)
                 Group {
                     metadata
                         .padding(.top, 30)
