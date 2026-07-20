@@ -23,6 +23,7 @@ final class SettingsSheetSession: ObservableObject {
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
     @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    @Published var webhookValues: [String]       // GET URLs, "" = empty
     /// Cached shortcut names for the picker — iOS apps can't enumerate the
     /// Shortcuts library, so this comes from the Mac (same iCloud-synced
     /// library) or a clipboard import; free-typed names merge in.
@@ -41,6 +42,7 @@ final class SettingsSheetSession: ObservableObject {
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutValues = model.shortcutSlots
+        webhookValues = model.webhookSlots
         // Slot names always appear in the picker, even if the cache is stale.
         for name in shortcutValues where !name.isEmpty && !knownShortcuts.contains(name) {
             knownShortcuts.append(name)
@@ -95,6 +97,7 @@ final class SettingsSheetSession: ObservableObject {
             })
         }
         model.setShortcutSlots(shortcutValues)
+        model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -116,8 +119,9 @@ struct SettingsSheet: View {
                 handednessSection
                 sourcesSection
                 volumeSection
-                shortcutSection
                 radioSection
+                shortcutSection
+                webhookSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -330,6 +334,41 @@ struct SourceOrderInline: View {
                 }
             }
         )
+    }
+}
+
+extension SettingsSheet {
+    var webhookSection: some View {
+        Section {
+            // A numbered circle like the quick-row buttons, with the URL
+            // flowing left-aligned beside it; long URLs wrap.
+            ForEach(0..<6, id: \.self) { i in
+                HStack(alignment: .top, spacing: 12) {
+                    ZStack {
+                        Circle().fill(session.webhookValues[i].isEmpty
+                                      ? Color.white.opacity(0.06)
+                                      : Color.white.opacity(0.14))
+                        Text("\(i + 1)")
+                            .font(.footnote.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(session.webhookValues[i].isEmpty
+                                             ? .tertiary : .secondary)
+                    }
+                    .frame(width: 26, height: 26)
+                    TextField("https://…", text: $session.webhookValues[i],
+                              axis: .vertical)
+                        .font(.callout)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .lineLimit(1...4)
+                }
+            }
+        } header: {
+            Text("Webhooks")
+        } footer: {
+            Text("Each slot appears as a numbered button in the quick row "
+                 + "and fires a GET request at its URL.")
+        }
     }
 }
 

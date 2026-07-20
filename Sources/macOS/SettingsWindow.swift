@@ -35,6 +35,7 @@ final class SettingsSession: ObservableObject {
     @Published var showVolumeInMenuBar: Bool
     @Published var radioSelection: [String]      // station path, "" = empty
     @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    @Published var webhookValues: [String]       // GET URLs, "" = empty
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
     /// list are merged in so they survive a rename on the Shortcuts side.
     @Published var shortcutNames: [String] = []
@@ -61,6 +62,7 @@ final class SettingsSession: ObservableObject {
         showVolumeInMenuBar = model.showVolumeInMenuBar
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutValues = model.shortcutSlots
+        webhookValues = model.webhookSlots
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -123,6 +125,7 @@ final class SettingsSession: ObservableObject {
             })
         }
         model.setShortcutSlots(shortcutValues)
+        model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -142,10 +145,12 @@ struct SettingsView: View {
                     .tabItem { Label("Sources", systemImage: "arrow.up.arrow.down") }
                 volumeTab
                     .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
-                shortcutsTab
-                    .tabItem { Label("Shortcuts", systemImage: "link") }
                 radioTab
                     .tabItem { Label("Radio", systemImage: "radio") }
+                shortcutsTab
+                    .tabItem { Label("Shortcuts", systemImage: "bolt") }
+                webhooksTab
+                    .tabItem { Label("Webhooks", systemImage: "link") }
                 hotkeysTab
                     .tabItem { Label("Hotkeys", systemImage: "keyboard") }
             }
@@ -160,7 +165,7 @@ struct SettingsView: View {
             }
             .padding(12)
         }
-        .frame(width: 640, height: 540)
+        .frame(width: 720, height: 540)
     }
 
     // MARK: tabs
@@ -271,6 +276,24 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .task { if !session.stationsLoaded { await session.loadStations() } }
+    }
+
+    private var webhooksTab: some View {
+        Form {
+            Section {
+                ForEach(0..<6, id: \.self) { i in
+                    LabeledContent("\(i + 1)") {
+                        TextField("", text: $session.webhookValues[i],
+                                  prompt: Text("https://…"))
+                            .labelsHidden()
+                    }
+                }
+            } footer: {
+                Text("Each slot appears as a numbered button in the quick row "
+                     + "and fires a GET request at its URL.")
+            }
+        }
+        .formStyle(.grouped)
     }
 
     private var shortcutsTab: some View {
@@ -387,7 +410,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     init(model: SpeakerModel, onFinish: @escaping () -> Void) {
         self.onFinish = onFinish
         self.session = SettingsSession(model: model)
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 540),
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 540),
                            styleMask: [.titled, .closable], backing: .buffered, defer: false)
         win.title = "KEF Control Settings"
         super.init(window: win)
@@ -402,7 +425,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             onCancel: { [weak self] in self?.window?.close() }
         )
         win.contentView = NSHostingView(rootView: view)
-        win.setContentSize(NSSize(width: 640, height: 540))
+        win.setContentSize(NSSize(width: 720, height: 540))
     }
 
     required init?(coder: NSCoder) { fatalError() }

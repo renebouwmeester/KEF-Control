@@ -332,20 +332,22 @@ struct PlayerView: View {
     /// The quick row's sets, in display order. On the Mac the pointer picks
     /// directly from three small icons (the phone cycles instead).
     private enum QuickSet: String, CaseIterable {
-        case presets, shortcuts, radio
+        case presets, radio, shortcuts, webhooks
         /// The same circled icons the iOS switcher uses.
         var icon: String {
             switch self {
-            case .presets:  return "speaker.wave.2.circle"
-            case .shortcuts: return "link.circle"
-            case .radio:    return "music.microphone.circle"
+            case .presets:   return "speaker.wave.2.circle"
+            case .radio:     return "music.microphone.circle"
+            case .shortcuts: return "bolt.circle"
+            case .webhooks:  return "link.circle"
             }
         }
         var help: String {
             switch self {
-            case .presets:  return "Volume presets"
+            case .presets:   return "Volume presets"
+            case .radio:     return "Radio presets"
             case .shortcuts: return "Shortcuts"
-            case .radio:    return "Radio presets"
+            case .webhooks:  return "Webhooks"
             }
         }
     }
@@ -354,8 +356,9 @@ struct PlayerView: View {
     private var availableSets: [QuickSet] {
         var out: [QuickSet] = []
         if !model.volumePresets.isEmpty { out.append(.presets) }
-        if model.hasShortcuts { out.append(.shortcuts) }
         if model.hasRadioSlots { out.append(.radio) }
+        if model.hasShortcuts { out.append(.shortcuts) }
+        if model.hasWebhooks { out.append(.webhooks) }
         return out
     }
 
@@ -389,9 +392,10 @@ struct PlayerView: View {
                 // to the picker.
                 ZStack {
                     switch currentSet {
-                    case .presets:  presetRow
+                    case .presets:   presetRow
+                    case .radio:     radioContent
                     case .shortcuts: shortcutRow
-                    case .radio:    radioContent
+                    case .webhooks:  webhookRow
                     }
                 }
                 .frame(width: Self.quickDiameter * 6 + 9 * 5, alignment: .trailing)
@@ -411,6 +415,29 @@ struct PlayerView: View {
                     }
                     .buttonStyle(.plain)
                     .help(next.help)
+                }
+            }
+        }
+    }
+
+    /// Numbered circles firing a GET at the slot's URL; the URL itself
+    /// shows as the tooltip.
+    private var webhookRow: some View {
+        HStack(spacing: 9) {
+            ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
+                if !url.isEmpty {
+                    Button { model.fireWebhook(i) } label: {
+                        ZStack {
+                            Circle().fill(Color.white.opacity(0.07))
+                            Text("\(i + 1)")
+                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: Self.quickDiameter, height: Self.quickDiameter)
+                        .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(url)
                 }
             }
         }

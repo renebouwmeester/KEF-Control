@@ -208,6 +208,31 @@ final class SpeakerModel: ObservableObject {
         #endif
     }
 
+    // MARK: Webhook quick-fire slots
+
+    /// Six GET-on-tap URLs for the quick row; "" = empty slot.
+    @Published var webhookSlots: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "WebhookSlots") as? [String]) ?? []
+        return Array((raw + Array(repeating: "", count: 6)).prefix(6))
+    }()
+
+    func setWebhookSlots(_ slots: [String]) {
+        var s = slots.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        while s.count < 6 { s.append("") }
+        webhookSlots = Array(s.prefix(6))
+        UserDefaults.standard.set(webhookSlots, forKey: "WebhookSlots")
+    }
+
+    var hasWebhooks: Bool { webhookSlots.contains { !$0.isEmpty } }
+
+    /// Fire-and-forget GET.
+    func fireWebhook(_ index: Int) {
+        guard webhookSlots.indices.contains(index),
+              !webhookSlots[index].isEmpty,
+              let url = URL(string: webhookSlots[index]) else { return }
+        Task { _ = try? await URLSession.shared.data(from: url) }
+    }
+
     /// Which quick-row set the Mac panel shows ("presets"/"shortcuts"/"radio").
     /// Same key the iOS shell uses via @AppStorage — identical semantics.
     @Published var quickRowSet: String =
