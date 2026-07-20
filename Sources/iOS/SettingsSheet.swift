@@ -21,7 +21,7 @@ final class SettingsSheetSession: ObservableObject {
     @Published var sourceRows: [SourceRow]
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
-    @Published var webhookValues: [String]       // GET URLs, "" = empty
+    @Published var shortcutValues: [String]      // Shortcut names, "" = empty
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -34,7 +34,7 @@ final class SettingsSheetSession: ObservableObject {
         }
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
-        webhookValues = model.webhookSlots
+        shortcutValues = model.shortcutSlots
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -61,7 +61,7 @@ final class SettingsSheetSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
-        model.setWebhookSlots(webhookValues)
+        model.setShortcutSlots(shortcutValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -84,7 +84,7 @@ struct SettingsSheet: View {
                 sourcesSection
                 volumeSection
                 radioSection
-                webhookSection
+                shortcutSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -224,40 +224,35 @@ struct SettingsSheet: View {
         }
     }
 
-    private var webhookSection: some View {
+    private var shortcutSection: some View {
         Section {
-            // A numbered circle like the quick-row buttons, with the URL
-            // field flowing left-aligned beside it — trailing-aligned
-            // LabeledContent made filled rows read as a floating number
-            // over a right-shoved URL.
+            // A numbered circle like the quick-row buttons, with the
+            // shortcut's name flowing beside it.
             ForEach(0..<6, id: \.self) { i in
-                // Top-aligned so the circle stays with the URL's first line
-                // when it wraps.
-                HStack(alignment: .top, spacing: 12) {
+                HStack(spacing: 12) {
                     ZStack {
-                        Circle().fill(session.webhookValues[i].isEmpty
+                        Circle().fill(session.shortcutValues[i].isEmpty
                                       ? Color.white.opacity(0.06)
                                       : Color.white.opacity(0.14))
                         Text("\(i + 1)")
                             .font(.footnote.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(session.webhookValues[i].isEmpty
+                            .foregroundStyle(session.shortcutValues[i].isEmpty
                                              ? .tertiary : .secondary)
                     }
                     .frame(width: 26, height: 26)
-                    TextField("https://…", text: $session.webhookValues[i],
-                              axis: .vertical)
+                    TextField("Shortcut name", text: $session.shortcutValues[i])
                         .font(.callout)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .lineLimit(1...4)
+                        .lineLimit(1)
                 }
             }
         } header: {
-            Text("Webhooks")
+            Text("Shortcuts")
         } footer: {
             Text("Each slot appears as a numbered button in the quick row "
-                 + "and fires a GET request at its URL.")
+                 + "and runs the Apple Shortcut with that exact name. "
+                 + "Running briefly opens the Shortcuts app — iOS offers no "
+                 + "background way.")
         }
     }
 }

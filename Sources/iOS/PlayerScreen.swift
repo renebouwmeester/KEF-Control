@@ -21,12 +21,12 @@ struct PlayerScreen: View {
 
     /// The quick row's three sets, in cycle order.
     enum QuickSet: String, CaseIterable {
-        case presets, webhooks, radio
+        case presets, shortcuts, radio
 
         var icon: String {
             switch self {
             case .presets:  return "speaker.wave.2.circle"
-            case .webhooks: return "link.circle"
+            case .shortcuts: return "bolt.circle"
             case .radio:    return "music.microphone.circle"
             }
         }
@@ -36,12 +36,12 @@ struct PlayerScreen: View {
     /// you use.
     @AppStorage("QuickRowSet") private var quickSetRaw = QuickSet.presets.rawValue
 
-    /// Sets that actually have content, in volume → webhooks → radio order;
+    /// Sets that actually have content, in volume → shortcuts → radio order;
     /// empty ones are skipped by the cycle.
     private var availableSets: [QuickSet] {
         var out: [QuickSet] = []
         if !model.volumePresets.isEmpty { out.append(.presets) }
-        if model.hasWebhooks { out.append(.webhooks) }
+        if model.hasShortcuts { out.append(.shortcuts) }
         if model.hasRadioSlots { out.append(.radio) }
         return out
     }
@@ -452,7 +452,7 @@ struct PlayerScreen: View {
     }
 
     /// One row carries the quick-action sets, directly above the source bar.
-    /// The leading button cycles volume → webhooks → radio (skipping empty
+    /// The leading button cycles volume → shortcuts → radio (skipping empty
     /// sets) and always shows the icon of the set it would switch TO.
     private var quickRow: some View {
         Group {
@@ -467,8 +467,8 @@ struct PlayerScreen: View {
                         switch currentSet {
                         case .presets:
                             presetContent.transition(.blurReplace)
-                        case .webhooks:
-                            webhookContent.transition(.blurReplace)
+                        case .shortcuts:
+                            shortcutContent.transition(.blurReplace)
                         case .radio:
                             radioContent.transition(.blurReplace)
                         }
@@ -503,17 +503,18 @@ struct PlayerScreen: View {
         }
     }
 
-    @State private var webhookFires = 0
+    @State private var shortcutRuns = 0
 
-    /// Numbered circles firing a GET at the slot's URL — stateless, so the
-    /// only feedback is the haptic.
-    private var webhookContent: some View {
+    /// Numbered circles running the slot's Apple Shortcut. Running hops to
+    /// the Shortcuts app briefly (no headless API on iOS), so the haptic
+    /// mostly marks the handoff.
+    private var shortcutContent: some View {
         HStack(spacing: 9) {
-            ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
+            ForEach(Array(model.shortcutSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
                     Button {
-                        webhookFires += 1
-                        model.fireWebhook(i)
+                        shortcutRuns += 1
+                        model.runShortcut(i)
                     } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.08))
@@ -528,7 +529,7 @@ struct PlayerScreen: View {
                 }
             }
         }
-                .sensoryFeedback(.impact(weight: .light), trigger: webhookFires)
+                .sensoryFeedback(.impact(weight: .light), trigger: shortcutRuns)
     }
 
     /// Circle diameter shared by volume and radio presets, and by the

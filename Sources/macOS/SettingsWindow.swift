@@ -34,7 +34,11 @@ final class SettingsSession: ObservableObject {
     @Published var volumeStep: String
     @Published var showVolumeInMenuBar: Bool
     @Published var radioSelection: [String]      // station path, "" = empty
-    @Published var webhookValues: [String]       // GET URLs, "" = empty
+    @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    /// Installed shortcuts, from `shortcuts list`; slot names not in the
+    /// list are merged in so they survive a rename on the Shortcuts side.
+    @Published var shortcutNames: [String] = []
+    @Published var shortcutsLoaded = false
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -56,7 +60,7 @@ final class SettingsSession: ObservableObject {
         volumeStep = String(ShortcutStore.volumeStep)
         showVolumeInMenuBar = model.showVolumeInMenuBar
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
-        webhookValues = model.webhookSlots
+        shortcutValues = model.shortcutSlots
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -69,6 +73,36 @@ final class SettingsSession: ObservableObject {
         }
         stations = found
         stationsLoaded = true
+    }
+
+    /// `shortcuts list` enumerates the user's shortcuts — a luxury iOS
+    /// doesn't offer.
+    func loadShortcuts() async {
+        let names: [String] = await withCheckedContinuation { cont in
+            DispatchQueue.global().async {
+                let task = Process()
+                task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+                task.arguments = ["list"]
+                let pipe = Pipe()
+                task.standardOutput = pipe
+                task.standardError = Pipe()
+                do {
+                    try task.run()
+                    task.waitUntilExit()
+                    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                    let out = String(data: data, encoding: .utf8) ?? ""
+                    cont.resume(returning: out.split(separator: "\n").map(String.init))
+                } catch {
+                    cont.resume(returning: [])
+                }
+            }
+        }
+        var merged = names
+        for slot in shortcutValues where !slot.isEmpty && !merged.contains(slot) {
+            merged.append(slot)
+        }
+        shortcutNames = merged
+        shortcutsLoaded = true
     }
 
     func save() {
@@ -88,7 +122,7 @@ final class SettingsSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
-        model.setWebhookSlots(webhookValues)
+        model.setShortcutSlots(shortcutValues)
         model.setSpeakerIP(ipText)
     }
 }
@@ -110,8 +144,8 @@ struct SettingsView: View {
                     .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
                 radioTab
                     .tabItem { Label("Radio", systemImage: "radio") }
-                webhooksTab
-                    .tabItem { Label("Webhooks", systemImage: "link") }
+                shortcutsTab
+                    .tabItem { Label("Shortcuts", systemImage: "bolt") }
                 hotkeysTab
                     .tabItem { Label("Hotkeys", systemImage: "keyboard") }
             }
@@ -239,22 +273,35 @@ struct SettingsView: View {
         .task { if !session.stationsLoaded { await session.loadStations() } }
     }
 
-    private var webhooksTab: some View {
+    private var shortcutsTab: some View {
         Form {
-            Section {
-                ForEach(0..<6, id: \.self) { i in
-                    LabeledContent("\(i + 1)") {
-                        TextField("", text: $session.webhookValues[i],
-                                  prompt: Text("https://…"))
-                            .labelsHidden()
+            if !session.shortcutsLoaded {
+                Section {
+                    HStack(spacing: 8) {
+                        ProgressView().controlSize(.small)
+                        Text("Reading your shortcuts…")
+                            .foregroundStyle(.secondary)
                     }
                 }
-            } footer: {
-                Text("Each slot appears as a numbered button in the quick row "
-                     + "and fires a GET request at its URL.")
+            } else {
+                Section {
+                    ForEach(0..<6, id: \.self) { i in
+                        Picker("\(i + 1)", selection: $session.shortcutValues[i]) {
+                            Text("—").tag("")
+                            ForEach(session.shortcutNames, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
+                        }
+                    }
+                } footer: {
+                    Text("Each slot appears as a numbered button in the quick "
+                         + "row and runs that shortcut — headlessly, via the "
+                         + "shortcuts command.")
+                }
             }
         }
         .formStyle(.grouped)
+        .task { if !session.shortcutsLoaded { await session.loadShortcuts() } }
     }
 
     private var volumeTab: some View {

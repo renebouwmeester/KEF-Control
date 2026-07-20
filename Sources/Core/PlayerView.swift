@@ -299,7 +299,7 @@ struct PlayerView: View {
 
             Button {
                 // Opening always lands on volume presets; switching to
-                // webhooks/radio is a per-visit choice, not a sticky one.
+                // shortcuts/radio is a per-visit choice, not a sticky one.
                 if !model.showPresets { model.quickRowSet = QuickSet.presets.rawValue }
                 withAnimation(.easeInOut(duration: PanelAnim.duration)) {
                     model.showPresets.toggle()
@@ -327,24 +327,24 @@ struct PlayerView: View {
         }
     }
 
-    // MARK: quick row — volume presets / webhooks / radio, one row
+    // MARK: quick row — volume presets / shortcuts / radio, one row
 
     /// The quick row's sets, in display order. On the Mac the pointer picks
     /// directly from three small icons (the phone cycles instead).
     private enum QuickSet: String, CaseIterable {
-        case presets, webhooks, radio
+        case presets, shortcuts, radio
         /// The same circled icons the iOS switcher uses.
         var icon: String {
             switch self {
             case .presets:  return "speaker.wave.2.circle"
-            case .webhooks: return "link.circle"
+            case .shortcuts: return "bolt.circle"
             case .radio:    return "music.microphone.circle"
             }
         }
         var help: String {
             switch self {
             case .presets:  return "Volume presets"
-            case .webhooks: return "Webhooks"
+            case .shortcuts: return "Shortcuts"
             case .radio:    return "Radio presets"
             }
         }
@@ -354,7 +354,7 @@ struct PlayerView: View {
     private var availableSets: [QuickSet] {
         var out: [QuickSet] = []
         if !model.volumePresets.isEmpty { out.append(.presets) }
-        if model.hasWebhooks { out.append(.webhooks) }
+        if model.hasShortcuts { out.append(.shortcuts) }
         if model.hasRadioSlots { out.append(.radio) }
         return out
     }
@@ -390,7 +390,7 @@ struct PlayerView: View {
                 ZStack {
                     switch currentSet {
                     case .presets:  presetRow
-                    case .webhooks: webhookRow
+                    case .shortcuts: shortcutRow
                     case .radio:    radioContent
                     }
                 }
@@ -416,13 +416,13 @@ struct PlayerView: View {
         }
     }
 
-    /// Numbered circles firing a GET at the slot's URL; the URL itself shows
-    /// as the tooltip.
-    private var webhookRow: some View {
+    /// Numbered circles running the slot's Apple Shortcut; the shortcut's
+    /// name shows as the tooltip.
+    private var shortcutRow: some View {
         HStack(spacing: 9) {
-            ForEach(Array(model.webhookSlots.enumerated()), id: \.offset) { i, url in
+            ForEach(Array(model.shortcutSlots.enumerated()), id: \.offset) { i, url in
                 if !url.isEmpty {
-                    Button { model.fireWebhook(i) } label: {
+                    Button { model.runShortcut(i) } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.07))
                             Text("\(i + 1)")
@@ -471,7 +471,7 @@ struct PlayerView: View {
 
     private var presetRow: some View {
         HStack(spacing: 9) {
-            // Circles like the webhook and radio buttons; 6 shown, like iOS.
+            // Circles like the shortcut and radio buttons; 6 shown, like iOS.
             ForEach(Array(model.volumePresets.prefix(6)), id: \.self) { preset in
                 let active = model.displayedVolume == preset
                 Button { model.setVolume(preset) } label: {

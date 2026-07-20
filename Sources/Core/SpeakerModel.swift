@@ -2,6 +2,9 @@
 // presets. Platform-neutral — artwork goes through PlatformImage (Platform.swift).
 import SwiftUI
 import Combine
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // MARK: - Observable speaker state
 
@@ -164,37 +167,50 @@ final class SpeakerModel: ObservableObject {
 
     var hasRadioSlots: Bool { radioSlots.contains { $0 != nil } }
 
-    // MARK: Webhook quick-fire slots
+    // MARK: Shortcut quick-run slots
 
-    /// Six GET-on-tap URLs for the quick row; "" = empty slot.
-    @Published var webhookSlots: [String] = {
-        let raw = (UserDefaults.standard.array(forKey: "WebhookSlots") as? [String]) ?? []
+    /// Six Apple Shortcuts names for the quick row; "" = empty slot.
+    @Published var shortcutSlots: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "ShortcutSlots") as? [String]) ?? []
         return Array((raw + Array(repeating: "", count: 6)).prefix(6))
     }()
 
-    func setWebhookSlots(_ slots: [String]) {
+    func setShortcutSlots(_ slots: [String]) {
         var s = slots.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         while s.count < 6 { s.append("") }
-        webhookSlots = Array(s.prefix(6))
-        UserDefaults.standard.set(webhookSlots, forKey: "WebhookSlots")
+        shortcutSlots = Array(s.prefix(6))
+        UserDefaults.standard.set(shortcutSlots, forKey: "ShortcutSlots")
     }
 
-    var hasWebhooks: Bool { webhookSlots.contains { !$0.isEmpty } }
+    var hasShortcuts: Bool { shortcutSlots.contains { !$0.isEmpty } }
 
-    /// Which quick-row set the Mac panel shows ("presets"/"webhooks"/"radio").
+    /// Run the slot's shortcut. macOS: headless via the shortcuts CLI.
+    /// iOS: the shortcuts:// URL scheme — Apple offers third-party apps no
+    /// in-process way to run user shortcuts, so this briefly opens the
+    /// Shortcuts app.
+    func runShortcut(_ index: Int) {
+        guard shortcutSlots.indices.contains(index) else { return }
+        let name = shortcutSlots[index]
+        guard !name.isEmpty else { return }
+        #if canImport(AppKit)
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: "/usr/bin/shortcuts")
+        task.arguments = ["run", name]
+        try? task.run()
+        #else
+        guard let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+              let url = URL(string: "shortcuts://run-shortcut?name=\(encoded)") else { return }
+        UIApplication.shared.open(url)
+        #endif
+    }
+
+    /// Which quick-row set the Mac panel shows ("presets"/"shortcuts"/"radio").
     /// Same key the iOS shell uses via @AppStorage — identical semantics.
     @Published var quickRowSet: String =
         UserDefaults.standard.string(forKey: "QuickRowSet") ?? "presets" {
         didSet { UserDefaults.standard.set(quickRowSet, forKey: "QuickRowSet") }
     }
 
-    /// Fire-and-forget GET — same semantics as KEF Audio's webhook button.
-    func fireWebhook(_ index: Int) {
-        guard webhookSlots.indices.contains(index),
-              !webhookSlots[index].isEmpty,
-              let url = URL(string: webhookSlots[index]) else { return }
-        Task { _ = try? await URLSession.shared.data(from: url) }
-    }
 
     /// True when the speaker is currently playing this slot's station. airable
     /// overwrites the track title with live metadata, so match on the station
