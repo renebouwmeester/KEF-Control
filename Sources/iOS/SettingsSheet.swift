@@ -3,6 +3,7 @@
 // hotkey concern, so it stays Mac-only too.
 import SwiftUI
 import Combine
+import UIKit
 
 /// Staged copies of everything the sheet edits; written back only on Save.
 /// A trimmed sibling of the Mac SettingsSession (which also stages hotkey
@@ -22,6 +23,11 @@ final class SettingsSheetSession: ObservableObject {
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
     @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    /// Cached shortcut names for the picker — iOS apps can't enumerate the
+    /// Shortcuts library, so this comes from the Mac (same iCloud-synced
+    /// library) or a clipboard import; free-typed names merge in.
+    @Published var knownShortcuts: [String] =
+        (UserDefaults.standard.array(forKey: "KnownShortcuts") as? [String]) ?? []
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -35,6 +41,33 @@ final class SettingsSheetSession: ObservableObject {
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutValues = model.shortcutSlots
+        // Slot names always appear in the picker, even if the cache is stale.
+        for name in shortcutValues where !name.isEmpty && !knownShortcuts.contains(name) {
+            knownShortcuts.append(name)
+        }
+    }
+
+    func rememberShortcut(_ name: String) {
+        guard !name.isEmpty, !knownShortcuts.contains(name) else { return }
+        knownShortcuts.append(name)
+        UserDefaults.standard.set(knownShortcuts, forKey: "KnownShortcuts")
+    }
+
+    /// Replace the cache from the clipboard (one shortcut name per line) —
+    /// fed by a helper shortcut: Get My Shortcuts -> Copy to Clipboard.
+    func importShortcutsFromClipboard() -> Int {
+        guard let text = UIPasteboard.general.string else { return 0 }
+        let names = text.split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        guard names.count > 1 else { return 0 }
+        var merged = names
+        for slot in shortcutValues where !slot.isEmpty && !merged.contains(slot) {
+            merged.append(slot)
+        }
+        knownShortcuts = merged
+        UserDefaults.standard.set(knownShortcuts, forKey: "KnownShortcuts")
+        return names.count
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -226,33 +259,35 @@ struct SettingsSheet: View {
 
     private var shortcutSection: some View {
         Section {
-            // A numbered circle like the quick-row buttons, with the
-            // shortcut's name flowing beside it.
             ForEach(0..<6, id: \.self) { i in
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle().fill(session.shortcutValues[i].isEmpty
-                                      ? Color.white.opacity(0.06)
-                                      : Color.white.opacity(0.14))
-                        Text("\(i + 1)")
-                            .font(.footnote.weight(.semibold).monospacedDigit())
+                NavigationLink {
+                    ShortcutPickerScreen(session: session, slot: i)
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle().fill(session.shortcutValues[i].isEmpty
+                                          ? Color.white.opacity(0.06)
+                                          : Color.white.opacity(0.14))
+                            Text("\(i + 1)")
+                                .font(.footnote.weight(.semibold).monospacedDigit())
+                                .foregroundStyle(session.shortcutValues[i].isEmpty
+                                                 ? .tertiary : .secondary)
+                        }
+                        .frame(width: 26, height: 26)
+                        Text(session.shortcutValues[i].isEmpty
+                             ? "—" : session.shortcutValues[i])
                             .foregroundStyle(session.shortcutValues[i].isEmpty
-                                             ? .tertiary : .secondary)
+                                             ? .secondary : .primary)
+                            .lineLimit(1)
                     }
-                    .frame(width: 26, height: 26)
-                    TextField("Shortcut name", text: $session.shortcutValues[i])
-                        .font(.callout)
-                        .autocorrectionDisabled()
-                        .lineLimit(1)
                 }
             }
         } header: {
             Text("Shortcuts")
         } footer: {
             Text("Each slot appears as a numbered button in the quick row "
-                 + "and runs the Apple Shortcut with that exact name. "
-                 + "Running briefly opens the Shortcuts app — iOS offers no "
-                 + "background way.")
+                 + "and runs that Apple Shortcut. Running briefly opens the "
+                 + "Shortcuts app — iOS offers no background way.")
         }
     }
 }
@@ -294,5 +329,81 @@ struct SourceOrderInline: View {
                 }
             }
         )
+    }
+}
+
+/// Searchable picker over the cached shortcut-name list, with free entry
+/// and a clipboard refresh — the closest iOS allows to browsing the
+/// Shortcuts library.
+struct ShortcutPickerScreen: View {
+    @ObservedObject var session: SettingsSheetSession
+    let slot: Int
+    @Environment(\.dismiss) private var dismiss
+    @State private var search = ""
+    @State private var custom = ""
+    @State private var importedCount: Int?
+
+    private var filtered: [String] {
+        search.isEmpty ? session.knownShortcuts
+                       : session.knownShortcuts.filter {
+                             $0.localizedCaseInsensitiveContains(search)
+                         }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                row(name: "", label: "None")
+                ForEach(filtered, id: \.self) { name in
+                    row(name: name, label: name)
+                }
+            }
+            Section {
+                TextField("Type a name not in the list", text: $custom)
+                    .autocorrectionDisabled()
+                    .onSubmit {
+                        let name = custom.trimmingCharacters(in: .whitespaces)
+                        guard !name.isEmpty else { return }
+                        session.rememberShortcut(name)
+                        session.shortcutValues[slot] = name
+                        dismiss()
+                    }
+                Button {
+                    importedCount = session.importShortcutsFromClipboard()
+                } label: {
+                    if let n = importedCount {
+                        Text(n > 0 ? "Imported \(n) shortcuts" : "Clipboard had no list")
+                    } else {
+                        Text("Refresh list from clipboard")
+                    }
+                }
+            } footer: {
+                Text("iOS apps can't read your Shortcuts library. To refresh "
+                     + "the list: in Shortcuts, run Get My Shortcuts → Copy "
+                     + "to Clipboard, then tap refresh. The Mac app seeds "
+                     + "this list too — the library syncs via iCloud.")
+            }
+        }
+        .searchable(text: $search, prompt: "Search shortcuts")
+        .navigationTitle("Slot \(slot + 1)")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func row(name: String, label: String) -> some View {
+        Button {
+            session.shortcutValues[slot] = name
+            dismiss()
+        } label: {
+            HStack {
+                Text(label)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                Spacer()
+                if session.shortcutValues[slot] == name {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.phoneAccent)
+                }
+            }
+        }
     }
 }
