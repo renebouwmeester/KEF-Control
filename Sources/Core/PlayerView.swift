@@ -146,11 +146,11 @@ struct PlayerView: View {
                 Rectangle().fill(barTint.opacity(0.25))
                 Rectangle().fill(barTint.opacity(0.9)).frame(width: geo.size.width * fraction)
             }
-            // Grows under the pointer while scrubbing, like iOS. The top
-            // edge stays flush with the artwork; the extra height overflows
-            // harmlessly into the gap below.
+            // Grows under the pointer while scrubbing, like iOS — upward
+            // into the artwork's bottom edge, keeping the gap to the
+            // timestamps untouched.
             .frame(height: model.isScrubbing ? 8 : 3)
-            .frame(maxHeight: .infinity, alignment: .top)
+            .frame(maxHeight: .infinity, alignment: .bottom)
             .animation(.easeOut(duration: 0.15), value: model.isScrubbing)
             .contentShape(Rectangle().inset(by: -8))   // easier to grab than 3 pt
             .gesture(model.displayCanSeek && length > 0 ? scrubGesture(width: geo.size.width, length: length) : nil)
