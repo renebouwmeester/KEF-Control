@@ -385,6 +385,7 @@ struct ShortcutPickerScreen: View {
             }
         }
         .searchable(text: $search, prompt: "Search shortcuts")
+        .tint(Color.phoneAccent)
         .navigationTitle("Slot \(slot + 1)")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -396,7 +397,7 @@ struct ShortcutPickerScreen: View {
         } label: {
             HStack {
                 Text(label)
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(.white)
                     .lineLimit(1)
                 Spacer()
                 if session.shortcutValues[slot] == name {
@@ -404,6 +405,9 @@ struct ShortcutPickerScreen: View {
                         .foregroundStyle(Color.phoneAccent)
                 }
             }
+            .contentShape(Rectangle())
         }
+        // Plain: the default list-button style tints labels blue.
+        .buttonStyle(.plain)
     }
 }
