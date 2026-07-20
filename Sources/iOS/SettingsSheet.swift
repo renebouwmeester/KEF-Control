@@ -116,8 +116,8 @@ struct SettingsSheet: View {
                 handednessSection
                 sourcesSection
                 volumeSection
-                radioSection
                 shortcutSection
+                radioSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)

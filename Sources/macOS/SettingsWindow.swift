@@ -142,10 +142,10 @@ struct SettingsView: View {
                     .tabItem { Label("Sources", systemImage: "arrow.up.arrow.down") }
                 volumeTab
                     .tabItem { Label("Volume", systemImage: "speaker.wave.2") }
+                shortcutsTab
+                    .tabItem { Label("Shortcuts", systemImage: "link") }
                 radioTab
                     .tabItem { Label("Radio", systemImage: "radio") }
-                shortcutsTab
-                    .tabItem { Label("Shortcuts", systemImage: "bolt") }
                 hotkeysTab
                     .tabItem { Label("Hotkeys", systemImage: "keyboard") }
             }

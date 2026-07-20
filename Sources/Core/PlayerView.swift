@@ -337,7 +337,7 @@ struct PlayerView: View {
         var icon: String {
             switch self {
             case .presets:  return "speaker.wave.2.circle"
-            case .shortcuts: return "bolt.circle"
+            case .shortcuts: return "link.circle"
             case .radio:    return "music.microphone.circle"
             }
         }
