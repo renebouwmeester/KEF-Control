@@ -259,7 +259,9 @@ struct SettingsView: View {
                 }
             } else {
                 Section {
-                    ForEach(0..<SpeakerModel.radioSlotCount, id: \.self) { i in
+                    // 6, like the panel row and the iOS app; a 7th slot from the
+                    // old layout keeps its stored value but isn't edited.
+                    ForEach(0..<6, id: \.self) { i in
                         Picker("Slot \(i + 1)", selection: $session.radioSelection[i]) {
                             Text("—").tag("")
                             ForEach(session.stations, id: \.path) { station in
@@ -330,7 +332,9 @@ struct SettingsView: View {
     private var volumeTab: some View {
         Form {
             Section("Presets · value and hotkey") {
-                ForEach(Array(HotKeyAction.presetActions.enumerated()), id: \.offset) { i, action in
+                // 6, like the panel row and the iOS app (preset 7's hotkey
+                // action still exists for old bindings, just isn't offered).
+                ForEach(Array(HotKeyAction.presetActions.prefix(6).enumerated()), id: \.offset) { i, action in
                     HStack(spacing: 8) {
                         Text("Preset \(i + 1)")
                             .frame(width: 64, alignment: .leading)
