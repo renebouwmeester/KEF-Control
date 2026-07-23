@@ -19,6 +19,6 @@ cp Info.plist "$APP/Contents/Info.plist"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp bluetooth-glyph.png "$APP/Contents/Resources/bluetooth-glyph.png"  # no SF Symbol exists for Bluetooth
 printf 'APPL????' > "$APP/Contents/PkgInfo"
-codesign --force --sign - "$APP"
+codesign --force --sign "DA21C246531B79A29C77A59DBE176101EAFA6D8A" "$APP"
 
 echo "Built: $APP ($(lipo -archs "$APP/Contents/MacOS/KEFMenuBar"))"
