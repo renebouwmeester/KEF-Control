@@ -397,6 +397,18 @@ final class SpeakerModel: ObservableObject {
                 self.discovery.stop()
                 self.discoverySink = nil
             }
+        // Already configured: still browse briefly at launch. A Bonjour browse
+        // is what makes macOS surface the Local Network permission prompt — a
+        // direct HTTP connect to the saved IP is silently denied until the grant
+        // exists — so this brings the prompt up on first run instead of leaving
+        // it buried in Settings. A few seconds is enough to trigger it.
+        if isConfigured {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(6))
+                self?.discovery.stop()
+                self?.discoverySink = nil
+            }
+        }
     }
 
     /// Point the app at a different speaker; persists and rebuilds the API clients.
@@ -576,7 +588,11 @@ final class SpeakerModel: ObservableObject {
         loadEqStore()
         // Nothing configured yet: look for a speaker on the network and adopt
         // it if exactly one turns up, so the common case needs no setup at all.
-        if ip.isEmpty { autoDiscover() }
+        // Always browse at launch: when nothing is configured this adopts a
+        // lone speaker automatically, and when a speaker IS configured it still
+        // primes the macOS Local Network prompt (see autoDiscover) so first-run
+        // access works without opening Settings.
+        autoDiscover()
         Task { await pollLoop() }
         // advance the progress line between polls
         Task {
