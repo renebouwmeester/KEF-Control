@@ -582,6 +582,10 @@ struct ShortcutPickerScreen: View {
                     get: { session.row(rowID)?.returns ?? true },
                     set: { session.setReturns($0, for: rowID) }))
                     .font(.callout)
+                    // The screen tints everything white for the checkmarks,
+                    // which leaves a white knob on a white track. Grey the
+                    // track so the switch stays readable, knob still white.
+                    .tint(Color.white.opacity(0.35))
             } footer: {
                 Text("On by default: Shortcuts hands the screen back when the "
                      + "shortcut finishes. Turn it off for a shortcut that "
