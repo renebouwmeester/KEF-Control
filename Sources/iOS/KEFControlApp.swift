@@ -10,6 +10,11 @@ extension Color {
     static let phoneAccent = Color.white
 }
 
+extension Notification.Name {
+    /// The sync shortcut is back and the names are on the clipboard.
+    static let kefShortcutSyncReturned = Notification.Name("KEFShortcutSyncReturned")
+}
+
 @main
 struct KEFControlApp: App {
     @StateObject private var model = SpeakerModel()
@@ -48,7 +53,12 @@ struct ContentView: View {
         // arrival itself is the point; kefcontrol://shortcuts is the helper
         // shortcut handing back the library it just copied.
         .onOpenURL { url in
-            if url.host == "shortcuts" {
+            guard url.host == "shortcuts" else { return }
+            if showSettings {
+                // The sheet never went away, so its onAppear won't fire again.
+                NotificationCenter.default.post(name: .kefShortcutSyncReturned,
+                                                object: nil)
+            } else {
                 pendingShortcutImport = true
                 showSettings = true
             }

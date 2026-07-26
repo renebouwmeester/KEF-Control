@@ -198,6 +198,12 @@ struct SettingsSheet: View {
             }
         }
         .onDisappear { discovery.stop() }
+        // Sync tapped from inside the sheet: it stayed on screen the whole
+        // trip, so the return arrives here instead of at onAppear.
+        .onReceive(NotificationCenter.default.publisher(for: .kefShortcutSyncReturned)) { _ in
+            let n = session.importShortcutsFromClipboard()
+            if n > 0 { syncedCount = n }
+        }
     }
 
     /// How many names the last sync brought in, for the footer.
