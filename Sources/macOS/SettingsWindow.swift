@@ -115,7 +115,10 @@ final class SettingsSession: ObservableObject {
         for slot in shortcutValues where !slot.isEmpty && !merged.contains(slot) {
             merged.append(slot)
         }
-        shortcutNames = merged
+        // `shortcuts list` returns them in the Shortcuts app's own order.
+        shortcutNames = merged.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
         shortcutsLoaded = true
     }
 

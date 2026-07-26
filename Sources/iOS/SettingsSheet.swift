@@ -397,10 +397,11 @@ struct ShortcutPickerScreen: View {
     @State private var importedCount: Int?
 
     private var filtered: [String] {
-        search.isEmpty ? session.knownShortcuts
-                       : session.knownShortcuts.filter {
-                             $0.localizedCaseInsensitiveContains(search)
-                         }
+        let all = session.knownShortcuts.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
+        return search.isEmpty ? all
+                              : all.filter { $0.localizedCaseInsensitiveContains(search) }
     }
 
     var body: some View {
