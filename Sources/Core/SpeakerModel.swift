@@ -317,6 +317,25 @@ final class SpeakerModel: ObservableObject {
         Task { _ = try? await URLSession.shared.data(from: url) }
     }
 
+    /// Which of the four sets may appear in the quick row at all. A set with
+    /// no content still hides itself; this is the "I never use these" switch.
+    @Published var quickPresetsOn: Bool =
+        UserDefaults.standard.object(forKey: "QuickPresetsOn") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(quickPresetsOn, forKey: "QuickPresetsOn") }
+    }
+    @Published var quickRadioOn: Bool =
+        UserDefaults.standard.object(forKey: "QuickRadioOn") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(quickRadioOn, forKey: "QuickRadioOn") }
+    }
+    @Published var quickShortcutsOn: Bool =
+        UserDefaults.standard.object(forKey: "QuickShortcutsOn") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(quickShortcutsOn, forKey: "QuickShortcutsOn") }
+    }
+    @Published var quickWebhooksOn: Bool =
+        UserDefaults.standard.object(forKey: "QuickWebhooksOn") as? Bool ?? true {
+        didSet { UserDefaults.standard.set(quickWebhooksOn, forKey: "QuickWebhooksOn") }
+    }
+
     /// Which quick-row set the Mac panel shows ("presets"/"shortcuts"/"radio").
     /// Same key the iOS shell uses via @AppStorage — identical semantics.
     @Published var quickRowSet: String =

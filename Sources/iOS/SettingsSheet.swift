@@ -42,6 +42,14 @@ final class SettingsSheetSession: ObservableObject {
     /// nothing here ever read one, despite what the footer used to claim.)
     @Published var knownShortcuts: [String] =
         (UserDefaults.standard.array(forKey: "KnownShortcuts") as? [String]) ?? []
+
+    /// Quick-row visibility, mirrored so the toggles redraw with the session
+    /// and write straight through to the model (no Save needed — you watch
+    /// the row change while the window is open).
+    @Published var quickPresetsOn: Bool { didSet { model.quickPresetsOn = quickPresetsOn } }
+    @Published var quickRadioOn: Bool { didSet { model.quickRadioOn = quickRadioOn } }
+    @Published var quickShortcutsOn: Bool { didSet { model.quickShortcutsOn = quickShortcutsOn } }
+    @Published var quickWebhooksOn: Bool { didSet { model.quickWebhooksOn = quickWebhooksOn } }
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -52,6 +60,10 @@ final class SettingsSheetSession: ObservableObject {
             SourceRow(id: $0.id, name: $0.name,
                       visible: !model.hiddenSources.contains($0.id))
         }
+        quickPresetsOn = model.quickPresetsOn
+        quickRadioOn = model.quickRadioOn
+        quickShortcutsOn = model.quickShortcutsOn
+        quickWebhooksOn = model.quickWebhooksOn
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutRows = (0..<6).map { i in
@@ -287,6 +299,9 @@ struct SettingsSheet: View {
 
     private var radioSection: some View {
         Section {
+            Toggle("Show in quick row", isOn: $session.quickRadioOn)
+                .font(.callout)
+
             if !session.stationsLoaded {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
@@ -316,6 +331,8 @@ struct SettingsSheet: View {
     private var volumeSection: some View {
         Section {
             // 6 on iOS; a 7th slot set on the Mac keep their values.
+            Toggle("Show in quick row", isOn: $session.quickPresetsOn)
+                .font(.callout)
             ForEach(0..<6, id: \.self) { i in
                 LabeledContent("Preset \(i + 1)") {
                     TextField("—", text: $session.presetValues[i])
@@ -331,6 +348,9 @@ struct SettingsSheet: View {
 
     private var shortcutSection: some View {
         Section {
+            Toggle("Show in quick row", isOn: $session.quickShortcutsOn)
+                .font(.callout)
+
             ForEach($session.shortcutRows) { $row in
                 NavigationLink {
                     ShortcutPickerScreen(session: session, rowID: row.id)
@@ -423,6 +443,9 @@ struct SourceOrderInline: View {
 extension SettingsSheet {
     var webhookSection: some View {
         Section {
+            Toggle("Show in quick row", isOn: $session.quickWebhooksOn)
+                .font(.callout)
+
             // A numbered circle like the quick-row buttons, with the URL
             // flowing left-aligned beside it; long URLs wrap.
             ForEach($session.webhookRows) { $row in

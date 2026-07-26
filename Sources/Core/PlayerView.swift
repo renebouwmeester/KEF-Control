@@ -355,10 +355,10 @@ struct PlayerView: View {
     /// Sets that actually have content; empty ones don't get an icon.
     private var availableSets: [QuickSet] {
         var out: [QuickSet] = []
-        if !model.volumePresets.isEmpty { out.append(.presets) }
-        if model.hasRadioSlots { out.append(.radio) }
-        if model.hasShortcuts { out.append(.shortcuts) }
-        if model.hasWebhooks { out.append(.webhooks) }
+        if model.quickPresetsOn, !model.volumePresets.isEmpty { out.append(.presets) }
+        if model.quickRadioOn, model.hasRadioSlots { out.append(.radio) }
+        if model.quickShortcutsOn, model.hasShortcuts { out.append(.shortcuts) }
+        if model.quickWebhooksOn, model.hasWebhooks { out.append(.webhooks) }
         return out
     }
 
