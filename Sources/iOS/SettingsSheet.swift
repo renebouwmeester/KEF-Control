@@ -512,6 +512,7 @@ struct ShortcutPickerScreen: View {
 
     var body: some View {
         List {
+            glyphSection
             Section {
                 row(name: "", label: "None")
                 ForEach(filtered, id: \.self) { name in
@@ -543,7 +544,6 @@ struct ShortcutPickerScreen: View {
                      + "to Clipboard, then tap refresh. The Mac app seeds "
                      + "this list too — the library syncs via iCloud.")
             }
-            glyphSection
         }
         .searchable(text: $search, prompt: "Search shortcuts")
         .tint(Color.phoneAccent)
