@@ -48,6 +48,14 @@ final class SettingsSession: ObservableObject {
     /// list are merged in so they survive a rename on the Shortcuts side.
     @Published var shortcutNames: [String] = []
     @Published var shortcutsLoaded = false
+    private var lastShortcutLoad = Date.distantPast
+
+    /// Re-read on the way back from the Shortcuts app, but not on every
+    /// window activation in a row.
+    func refreshShortcutsIfStale() {
+        guard Date().timeIntervalSince(lastShortcutLoad) > 2 else { return }
+        Task { await loadShortcuts() }
+    }
     @Published var stations: [SpeakerModel.RadioStation] = []
     @Published var stationsLoaded = false
 
@@ -97,7 +105,9 @@ final class SettingsSession: ObservableObject {
     }
 
     /// `shortcuts list` enumerates the user's shortcuts — a luxury iOS
-    /// doesn't offer.
+    /// doesn't offer. Cheap (~30ms even with a couple of hundred), so it
+    /// re-runs whenever the window comes forward rather than caching for the
+    /// lifetime of the session.
     func loadShortcuts() async {
         let names: [String] = await withCheckedContinuation { cont in
             DispatchQueue.global().async {
@@ -127,6 +137,7 @@ final class SettingsSession: ObservableObject {
             $0.localizedStandardCompare($1) == .orderedAscending
         }
         shortcutsLoaded = true
+        lastShortcutLoad = Date()
     }
 
     func save() {
@@ -352,16 +363,28 @@ struct SettingsView: View {
                     .onMove { session.shortcutRows.move(fromOffsets: $0, toOffset: $1) }
                 }
                 .listStyle(.bordered)
-                Text("Drag to reorder — the quick row follows this order. The "
-                     + "icon is ours to choose: neither macOS nor iOS lets an "
-                     + "app read a shortcut's own glyph.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 2)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("Drag to reorder — the quick row follows this order. "
+                         + "The icon is ours to choose: neither macOS nor iOS "
+                         + "lets an app read a shortcut's own glyph.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 4)
+                    Button("Reload") { Task { await session.loadShortcuts() } }
+                        .buttonStyle(.link)
+                        .font(.caption)
+                        .help("Re-read the list from the Shortcuts app")
+                }
+                .padding(.horizontal, 2)
             }
         }
         .padding(16)
         .task { if !session.shortcutsLoaded { await session.loadShortcuts() } }
+        // Add a shortcut, switch back here, and it's in the list.
+        .onReceive(NotificationCenter.default.publisher(
+            for: NSApplication.didBecomeActiveNotification)) { _ in
+            session.refreshShortcutsIfStale()
+        }
     }
 
     /// The row's icon, with a grid to change it. A popover, not a Menu:
