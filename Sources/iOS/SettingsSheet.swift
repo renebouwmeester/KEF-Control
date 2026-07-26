@@ -44,6 +44,17 @@ final class SettingsSheetSession: ObservableObject {
     @Published var knownShortcuts: [String] =
         (UserDefaults.standard.array(forKey: "KnownShortcuts") as? [String]) ?? []
 
+    /// The quick row's sets, in their cycle order, each with its switch.
+    /// One place for both, so there's a single answer to "what shows and in
+    /// what order".
+    struct QuickSetRow: Identifiable {
+        let id: String          // "presets" / "radio" / "shortcuts" / "webhooks"
+        var on: Bool
+        var label: String
+        var icon: String
+    }
+    @Published var quickSetRows: [QuickSetRow] = []
+
     /// Quick-row visibility, mirrored so the toggles redraw with the session
     /// and write straight through to the model (no Save needed — you watch
     /// the row change while the window is open).
@@ -60,6 +71,20 @@ final class SettingsSheetSession: ObservableObject {
         sourceRows = model.orderedSources.map {
             SourceRow(id: $0.id, name: $0.name,
                       visible: !model.hiddenSources.contains($0.id))
+        }
+        quickSetRows = model.quickSetOrder.compactMap { id in
+            switch id {
+            case "presets":   return .init(id: id, on: model.quickPresetsOn,
+                                           label: "Volume presets",
+                                           icon: "speaker.wave.2.circle")
+            case "radio":     return .init(id: id, on: model.quickRadioOn,
+                                           label: "Radio", icon: "music.microphone.circle")
+            case "shortcuts": return .init(id: id, on: model.quickShortcutsOn,
+                                           label: "Shortcuts", icon: "link.circle")
+            case "webhooks":  return .init(id: id, on: model.quickWebhooksOn,
+                                           label: "Webhooks", icon: "bolt.circle")
+            default:          return nil
+            }
         }
         quickPresetsOn = model.quickPresetsOn
         quickRadioOn = model.quickRadioOn
@@ -94,6 +119,21 @@ final class SettingsSheetSession: ObservableObject {
     func setName(_ name: String, for id: UUID) {
         guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
         shortcutRows[i].name = name
+    }
+
+    /// Order and switches both write straight through: you watch the quick
+    /// row change while the sheet is open.
+    func applyQuickSets() {
+        model.quickSetOrder = quickSetRows.map(\.id)
+        for row in quickSetRows {
+            switch row.id {
+            case "presets":   model.quickPresetsOn = row.on
+            case "radio":     model.quickRadioOn = row.on
+            case "shortcuts": model.quickShortcutsOn = row.on
+            case "webhooks":  model.quickWebhooksOn = row.on
+            default: break
+            }
+        }
     }
 
     func setReturns(_ on: Bool, for id: UUID) {
@@ -196,6 +236,7 @@ struct SettingsSheet: View {
                 radioSection
                 shortcutSection
                 webhookSection
+                quickRowSection
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
@@ -285,6 +326,20 @@ struct SettingsSheet: View {
         }
     }
 
+    private var quickRowSection: some View {
+        Section {
+            QuickSetOrderInline(session: session)
+                .frame(height: CGFloat(session.quickSetRows.count) * 50)
+                .listRowInsets(EdgeInsets())
+        } header: {
+            Text("Quick row")
+        } footer: {
+            Text("Drag to set the order the row cycles through, and switch off "
+                 + "what you never use. A set with nothing in it stays hidden "
+                 + "either way.")
+        }
+    }
+
     private var sourcesSection: some View {
         Section {
             // An embedded plain List with its own always-active edit mode:
@@ -308,8 +363,6 @@ struct SettingsSheet: View {
 
     private var radioSection: some View {
         Section {
-            Toggle("Show in quick row", isOn: $session.quickRadioOn)
-                .font(.callout)
 
             if !session.stationsLoaded {
                 HStack(spacing: 8) {
@@ -340,8 +393,6 @@ struct SettingsSheet: View {
     private var volumeSection: some View {
         Section {
             // 6 on iOS; a 7th slot set on the Mac keep their values.
-            Toggle("Show in quick row", isOn: $session.quickPresetsOn)
-                .font(.callout)
             ForEach(0..<6, id: \.self) { i in
                 LabeledContent("Preset \(i + 1)") {
                     TextField("—", text: $session.presetValues[i])
@@ -357,8 +408,6 @@ struct SettingsSheet: View {
 
     private var shortcutSection: some View {
         Section {
-            Toggle("Show in quick row", isOn: $session.quickShortcutsOn)
-                .font(.callout)
 
             ForEach($session.shortcutRows) { $row in
                 NavigationLink {
@@ -409,6 +458,40 @@ struct SettingsSheet: View {
     }
 }
 
+/// The quick row's sets: drag to order, switch to include. Same embedded
+/// always-editing List as the sources, for the same reason.
+struct QuickSetOrderInline: View {
+    @ObservedObject var session: SettingsSheetSession
+
+    var body: some View {
+        List {
+            ForEach(session.quickSetRows) { row in
+                Toggle(isOn: Binding(
+                    get: { session.quickSetRows.first { $0.id == row.id }?.on ?? true },
+                    set: { value in
+                        if let i = session.quickSetRows.firstIndex(where: { $0.id == row.id }) {
+                            session.quickSetRows[i].on = value
+                            session.applyQuickSets()
+                        }
+                    })) {
+                    Label(row.label, systemImage: row.icon)
+                }
+                .listRowBackground(Color(.secondarySystemGroupedBackground))
+            }
+            .onMove {
+                session.quickSetRows.move(fromOffsets: $0, toOffset: $1)
+                session.applyQuickSets()
+            }
+        }
+        .listStyle(.plain)
+        .scrollDisabled(true)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 44)
+        .contentMargins(.vertical, 0, for: .scrollContent)
+        .environment(\.editMode, .constant(.active))
+    }
+}
+
 /// Embedded reorder list: plain style, fixed height, scroll disabled, its
 /// own permanently-active edit mode — smooth List dragging inline in the
 /// Form without a pushed screen.
@@ -452,8 +535,6 @@ struct SourceOrderInline: View {
 extension SettingsSheet {
     var webhookSection: some View {
         Section {
-            Toggle("Show in quick row", isOn: $session.quickWebhooksOn)
-                .font(.callout)
 
             // A numbered circle like the quick-row buttons, with the URL
             // flowing left-aligned beside it; long URLs wrap.

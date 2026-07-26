@@ -54,6 +54,16 @@ final class SettingsSession: ObservableObject {
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
     /// list are merged in so they survive a rename on the Shortcuts side.
 
+    /// The quick row's sets, in cycle order, each with its switch — one place
+    /// for what shows and in what order.
+    struct QuickSetRow: Identifiable {
+        let id: String
+        var on: Bool
+        var label: String
+        var icon: String
+    }
+    @Published var quickSetRows: [QuickSetRow] = []
+
     /// Quick-row visibility, mirrored so the toggles redraw with the session
     /// and write straight through to the model (no Save needed — you watch
     /// the row change while the window is open).
@@ -89,6 +99,20 @@ final class SettingsSession: ObservableObject {
                       visible: !model.hiddenSources.contains($0.id))
         }
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
+        quickSetRows = model.quickSetOrder.compactMap { id in
+            switch id {
+            case "presets":   return .init(id: id, on: model.quickPresetsOn,
+                                           label: "Volume presets",
+                                           icon: "speaker.wave.2.circle")
+            case "radio":     return .init(id: id, on: model.quickRadioOn,
+                                           label: "Radio", icon: "music.microphone.circle")
+            case "shortcuts": return .init(id: id, on: model.quickShortcutsOn,
+                                           label: "Shortcuts", icon: "link.circle")
+            case "webhooks":  return .init(id: id, on: model.quickWebhooksOn,
+                                           label: "Webhooks", icon: "bolt.circle")
+            default:          return nil
+            }
+        }
         quickPresetsOn = model.quickPresetsOn
         quickRadioOn = model.quickRadioOn
         quickShortcutsOn = model.quickShortcutsOn
@@ -120,6 +144,21 @@ final class SettingsSession: ObservableObject {
         }
         stations = found
         stationsLoaded = true
+    }
+
+    /// Order and switches both write straight through: you watch the quick
+    /// row change while the window is open.
+    func applyQuickSets() {
+        model.quickSetOrder = quickSetRows.map(\.id)
+        for row in quickSetRows {
+            switch row.id {
+            case "presets":   model.quickPresetsOn = row.on
+            case "radio":     model.quickRadioOn = row.on
+            case "shortcuts": model.quickShortcutsOn = row.on
+            case "webhooks":  model.quickWebhooksOn = row.on
+            default: break
+            }
+        }
     }
 
     /// What a row's button draws: the chosen glyph, else the one its name
@@ -209,9 +248,11 @@ struct SettingsView: View {
                 radioTab
                     .tabItem { Label("Radio", systemImage: "radio") }
                 shortcutsTab
-                    .tabItem { Label("Shortcuts", systemImage: "bolt") }
+                    .tabItem { Label("Shortcuts", systemImage: "link") }
                 webhooksTab
-                    .tabItem { Label("Webhooks", systemImage: "link") }
+                    .tabItem { Label("Webhooks", systemImage: "bolt") }
+                quickRowTab
+                    .tabItem { Label("Quick row", systemImage: "square.grid.2x2") }
                 hotkeysTab
                     .tabItem { Label("Hotkeys", systemImage: "keyboard") }
             }
@@ -308,18 +349,38 @@ struct SettingsView: View {
         )
     }
 
-    /// Whether this set may show up in the panel at all. Writes straight
-    /// through like the speaker switches — you watch the row change while
-    /// the window is open.
-    private func quickRowToggle(_ isOn: Binding<Bool>) -> some View {
-        Toggle("Show in quick row", isOn: isOn)
-            .toggleStyle(.switch)
-            .controlSize(.small)
+    /// The quick row's sets: drag to order, switch to include. A List, like
+    /// the sources tab — grouped Forms don't drag.
+    private var quickRowTab: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            List {
+                ForEach($session.quickSetRows) { $row in
+                    HStack {
+                        Label(row.label, systemImage: row.icon)
+                        Spacer()
+                        Toggle("", isOn: $row.on)
+                            .labelsHidden().toggleStyle(.switch).controlSize(.small)
+                            .onChange(of: row.on) { session.applyQuickSets() }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .onMove {
+                    session.quickSetRows.move(fromOffsets: $0, toOffset: $1)
+                    session.applyQuickSets()
+                }
+            }
+            .listStyle(.bordered)
+            Text("Drag to set the order the row cycles through, and switch off "
+                 + "what you never use. A set with nothing in it stays hidden "
+                 + "either way.")
+                .font(.caption).foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
+        }
+        .padding(16)
     }
 
     private var radioTab: some View {
         Form {
-            Section { quickRowToggle($session.quickRadioOn) }
             if !session.stationsLoaded {
                 Section {
                     HStack(spacing: 8) {
@@ -354,7 +415,6 @@ struct SettingsView: View {
     private var webhooksTab: some View {
         // A List, not a Form: grouped Forms don't support row dragging.
         VStack(alignment: .leading, spacing: 8) {
-            quickRowToggle($session.quickWebhooksOn)
             List {
                 ForEach($session.webhookRows) { $row in
                     HStack(spacing: 8) {
@@ -387,7 +447,6 @@ struct SettingsView: View {
         // A List, not a Form, for the same reason as the sources tab: grouped
         // Forms don't support row dragging.
         VStack(alignment: .leading, spacing: 8) {
-            quickRowToggle($session.quickShortcutsOn)
             if !session.shortcutsLoaded {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
@@ -516,7 +575,6 @@ struct SettingsView: View {
 
     private var volumeTab: some View {
         Form {
-            Section { quickRowToggle($session.quickPresetsOn) }
             Section("Presets · value and hotkey") {
                 // 6, like the panel row and the iOS app (preset 7's hotkey
                 // action still exists for old bindings, just isn't offered).

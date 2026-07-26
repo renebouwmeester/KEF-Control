@@ -337,6 +337,19 @@ final class SpeakerModel: ObservableObject {
         Task { _ = try? await URLSession.shared.data(from: url) }
     }
 
+    /// The order the quick row cycles through its sets. Stored as raw names
+    /// so the enum can live in the views; unknown or missing entries fall
+    /// back to the built-in order.
+    static let defaultQuickOrder = ["presets", "radio", "shortcuts", "webhooks"]
+
+    @Published var quickSetOrder: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "QuickSetOrder") as? [String]) ?? []
+        let known = raw.filter { SpeakerModel.defaultQuickOrder.contains($0) }
+        return known + SpeakerModel.defaultQuickOrder.filter { !known.contains($0) }
+    }() {
+        didSet { UserDefaults.standard.set(quickSetOrder, forKey: "QuickSetOrder") }
+    }
+
     /// Which of the four sets may appear in the quick row at all. A set with
     /// no content still hides itself; this is the "I never use these" switch.
     @Published var quickPresetsOn: Bool =

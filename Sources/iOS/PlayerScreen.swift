@@ -40,12 +40,15 @@ struct PlayerScreen: View {
     /// Sets that actually have content, in volume → radio → shortcuts →
     /// webhooks order; empty ones are skipped by the cycle.
     private var availableSets: [QuickSet] {
-        var out: [QuickSet] = []
-        if model.quickPresetsOn, !model.volumePresets.isEmpty { out.append(.presets) }
-        if model.quickRadioOn, model.hasRadioSlots { out.append(.radio) }
-        if model.quickShortcutsOn, model.hasShortcuts { out.append(.shortcuts) }
-        if model.quickWebhooksOn, model.hasWebhooks { out.append(.webhooks) }
-        return out
+        func usable(_ set: QuickSet) -> Bool {
+            switch set {
+            case .presets:   return model.quickPresetsOn && !model.volumePresets.isEmpty
+            case .radio:     return model.quickRadioOn && model.hasRadioSlots
+            case .shortcuts: return model.quickShortcutsOn && model.hasShortcuts
+            case .webhooks:  return model.quickWebhooksOn && model.hasWebhooks
+            }
+        }
+        return model.quickSetOrder.compactMap(QuickSet.init(rawValue:)).filter(usable)
     }
 
     private var currentSet: QuickSet {
