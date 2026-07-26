@@ -35,6 +35,7 @@ final class SettingsSession: ObservableObject {
     @Published var showVolumeInMenuBar: Bool
     @Published var radioSelection: [String]      // station path, "" = empty
     @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    @Published var shortcutGlyphs: [String]      // SF Symbols, "" = from name
     @Published var webhookValues: [String]       // GET URLs, "" = empty
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
     /// list are merged in so they survive a rename on the Shortcuts side.
@@ -62,6 +63,7 @@ final class SettingsSession: ObservableObject {
         showVolumeInMenuBar = model.showVolumeInMenuBar
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutValues = model.shortcutSlots
+        shortcutGlyphs = model.shortcutGlyphs
         webhookValues = model.webhookSlots
     }
 
@@ -75,6 +77,16 @@ final class SettingsSession: ObservableObject {
         }
         stations = found
         stationsLoaded = true
+    }
+
+    /// What a slot's button draws: the chosen glyph, else the one its name
+    /// suggests.
+    func glyph(slot: Int) -> String {
+        if shortcutGlyphs.indices.contains(slot), !shortcutGlyphs[slot].isEmpty {
+            return shortcutGlyphs[slot]
+        }
+        return SpeakerModel.guessedGlyph(for: shortcutValues.indices.contains(slot)
+                                         ? shortcutValues[slot] : "")
     }
 
     /// `shortcuts list` enumerates the user's shortcuts — a luxury iOS
@@ -125,6 +137,7 @@ final class SettingsSession: ObservableObject {
             })
         }
         model.setShortcutSlots(shortcutValues)
+        model.setShortcutGlyphs(shortcutGlyphs)
         model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
@@ -135,6 +148,8 @@ struct SettingsView: View {
     @ObservedObject var discovery: SpeakerDiscovery
     let onSave: () -> Void
     let onCancel: () -> Void
+    /// Which slot's icon grid is open, if any.
+    @State private var glyphPopover: Int?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -311,22 +326,103 @@ struct SettingsView: View {
             } else {
                 Section {
                     ForEach(0..<6, id: \.self) { i in
-                        Picker("\(i + 1)", selection: $session.shortcutValues[i]) {
-                            Text("—").tag("")
-                            ForEach(session.shortcutNames, id: \.self) { name in
-                                Text(name).tag(name)
+                        HStack(spacing: 8) {
+                            glyphButton(slot: i)
+                            Picker("", selection: $session.shortcutValues[i]) {
+                                Text("—").tag("")
+                                ForEach(session.shortcutNames, id: \.self) { name in
+                                    Text(name).tag(name)
+                                }
                             }
+                            .labelsHidden()
                         }
                     }
                 } footer: {
-                    Text("Each slot appears as a numbered button in the quick "
-                         + "row and runs that shortcut — headlessly, via the "
-                         + "shortcuts command.")
+                    Text("Each slot appears in the quick row and runs that "
+                         + "shortcut — headlessly, via the shortcuts command. "
+                         + "The icon is ours to choose: neither macOS nor iOS "
+                         + "lets an app read a shortcut's own glyph.")
                 }
             }
         }
         .formStyle(.grouped)
         .task { if !session.shortcutsLoaded { await session.loadShortcuts() } }
+    }
+
+    /// The slot's icon, with a grid to change it. A popover, not a Menu:
+    /// macOS drops images from menu rows, so a menu of glyphs would be blank.
+    private func glyphButton(slot: Int) -> some View {
+        Button {
+            glyphPopover = glyphPopover == slot ? nil : slot
+        } label: {
+            ZStack {
+                Circle().fill(Color.primary.opacity(0.07))
+                Image(systemName: session.glyph(slot: slot))
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(session.shortcutValues[slot].isEmpty
+                                     ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+            }
+            .frame(width: 24, height: 24)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Icon for this slot")
+        .popover(isPresented: Binding(get: { glyphPopover == slot },
+                                      set: { if !$0 { glyphPopover = nil } }),
+                 arrowEdge: .bottom) {
+            glyphGrid(slot: slot)
+        }
+    }
+
+    private func glyphGrid(slot: Int) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                session.shortcutGlyphs[slot] = ""
+                glyphPopover = nil
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: SpeakerModel.guessedGlyph(for: session.shortcutValues[slot]))
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 18)
+                    Text("Automatic").font(.callout)
+                    if session.shortcutGlyphs[slot].isEmpty {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.appAccent)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6),
+                                     count: 8), spacing: 6) {
+                ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
+                    let picked = session.shortcutGlyphs[slot] == name
+                    Button {
+                        session.shortcutGlyphs[slot] = name
+                        glyphPopover = nil
+                    } label: {
+                        Image(systemName: name)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(picked ? AnyShapeStyle(Color.appAccent)
+                                                    : AnyShapeStyle(.primary))
+                            .frame(width: 28, height: 28)
+                            .background {
+                                Circle().fill(picked ? Color.appAccent.opacity(0.20)
+                                                     : Color.primary.opacity(0.06))
+                            }
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(name)
+                }
+            }
+        }
+        .padding(12)
+        .frame(width: 300)
     }
 
     private var volumeTab: some View {

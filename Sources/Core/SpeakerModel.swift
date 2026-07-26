@@ -182,6 +182,90 @@ final class SpeakerModel: ObservableObject {
         UserDefaults.standard.set(shortcutSlots, forKey: "ShortcutSlots")
     }
 
+    /// One SF Symbol per slot; "" means "work it out from the name".
+    /// iOS hands out no way to read a Shortcut's own glyph — the Shortcuts
+    /// library is closed to third-party apps — so the icon is ours to pick.
+    @Published var shortcutGlyphs: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "ShortcutGlyphs") as? [String]) ?? []
+        return Array((raw + Array(repeating: "", count: 6)).prefix(6))
+    }()
+
+    func setShortcutGlyphs(_ glyphs: [String]) {
+        var g = glyphs
+        while g.count < 6 { g.append("") }
+        shortcutGlyphs = Array(g.prefix(6))
+        UserDefaults.standard.set(shortcutGlyphs, forKey: "ShortcutGlyphs")
+    }
+
+    /// The glyph to draw for a slot: the chosen one, else a guess from the
+    /// shortcut's name, else a plain bolt.
+    func shortcutGlyph(_ index: Int) -> String {
+        if shortcutGlyphs.indices.contains(index), !shortcutGlyphs[index].isEmpty {
+            return shortcutGlyphs[index]
+        }
+        let name = shortcutSlots.indices.contains(index) ? shortcutSlots[index] : ""
+        return Self.guessedGlyph(for: name)
+    }
+
+    /// Keyword → glyph, so a fresh slot already looks like what it does.
+    /// Dutch and English, first match wins.
+    private static let glyphHints: [(String, String)] = [
+        ("licht", "lightbulb"), ("light", "lightbulb"), ("lamp", "lightbulb"),
+        ("tv", "tv"), ("televisie", "tv"), ("film", "film"), ("movie", "film"),
+        ("bios", "film"), ("cinema", "film"),
+        ("muziek", "music.note"), ("music", "music.note"),
+        ("spotify", "music.note"), ("roon", "music.note"), ("plex", "film"),
+        ("radio", "antenna.radiowaves.left.and.right"),
+        ("volume", "speaker.wave.2"), ("geluid", "speaker.wave.2"),
+        ("sound", "speaker.wave.2"), ("mute", "speaker.slash"),
+        ("koptelefoon", "headphones"), ("headphone", "headphones"),
+        ("speaker", "hifispeaker"), ("airplay", "airplayaudio"),
+        ("slaap", "bed.double"), ("sleep", "bed.double"), ("bed", "bed.double"),
+        ("nacht", "moon"), ("night", "moon"), ("avond", "moon"),
+        ("ochtend", "sunrise"), ("morning", "sunrise"), ("wek", "alarm"),
+        ("wake", "alarm"), ("alarm", "alarm"), ("timer", "timer"),
+        ("koffie", "cup.and.saucer"), ("coffee", "cup.and.saucer"),
+        ("eten", "fork.knife"), ("dinner", "fork.knife"),
+        ("werk", "desktopcomputer"), ("work", "desktopcomputer"),
+        ("lezen", "book"), ("read", "book"), ("boek", "book"),
+        ("game", "gamecontroller"), ("spel", "gamecontroller"),
+        ("thuis", "house"), ("home", "house"), ("huis", "house"),
+        ("weg", "figure.walk"), ("away", "figure.walk"), ("vertrek", "figure.walk"),
+        ("auto", "car"), ("car", "car"),
+        ("warm", "thermometer"), ("temperat", "thermometer"),
+        ("koel", "wind"), ("vent", "wind"), ("fan", "wind"),
+        ("aan", "power"), ("uit", "power"), ("power", "power"),
+        ("stroom", "powerplug"), ("plug", "powerplug"),
+        ("slot", "lock"), ("lock", "lock"), ("deur", "door.left.hand.closed"),
+        ("gordijn", "curtains.closed"), ("curtain", "curtains.closed"),
+        ("zon", "sun.max"), ("sun", "sun.max"),
+        ("feest", "sparkles"), ("party", "sparkles"),
+        ("scene", "wand.and.stars"), ("sfeer", "wand.and.stars"),
+        ("herstart", "arrow.clockwise"), ("restart", "arrow.clockwise"),
+        ("reset", "arrow.clockwise"),
+    ]
+
+    static func guessedGlyph(for name: String) -> String {
+        let n = name.lowercased()
+        for (key, glyph) in glyphHints where n.contains(key) { return glyph }
+        return "bolt"
+    }
+
+    /// The set offered in the picker — every one of these is drawable, so a
+    /// slot can never end up with a name iOS doesn't know.
+    static let glyphChoices = [
+        "bolt", "power", "powerplug", "lightbulb", "lamp.desk", "sun.max",
+        "moon", "sunrise", "sunset", "house", "figure.walk", "bed.double",
+        "tv", "film", "play.circle", "music.note", "hifispeaker", "headphones",
+        "speaker.wave.2", "speaker.slash", "airplayaudio",
+        "antenna.radiowaves.left.and.right", "wifi", "alarm", "timer",
+        "clock", "calendar", "bell", "cup.and.saucer", "fork.knife", "book",
+        "gamecontroller", "desktopcomputer", "car", "thermometer", "wind",
+        "drop", "flame", "leaf", "lock", "curtains.closed", "sparkles",
+        "wand.and.stars", "arrow.clockwise", "star", "heart", "gear",
+        "square.grid.2x2",
+    ]
+
     var hasShortcuts: Bool { shortcutSlots.contains { !$0.isEmpty } }
 
     /// Run the slot's shortcut. macOS: headless via the shortcuts CLI.

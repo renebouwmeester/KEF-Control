@@ -338,8 +338,8 @@ struct PlayerView: View {
             switch self {
             case .presets:   return "speaker.wave.2.circle"
             case .radio:     return "music.microphone.circle"
-            case .shortcuts: return "bolt.circle"
-            case .webhooks:  return "link.circle"
+            case .shortcuts: return "link.circle"
+            case .webhooks:  return "bolt.circle"
             }
         }
         var help: String {
@@ -443,8 +443,8 @@ struct PlayerView: View {
         }
     }
 
-    /// Numbered circles running the slot's Apple Shortcut; the shortcut's
-    /// name shows as the tooltip.
+    /// Circles running the slot's Apple Shortcut, each with its own glyph;
+    /// the shortcut's name shows as the tooltip.
     private var shortcutRow: some View {
         HStack(spacing: 9) {
             ForEach(Array(model.shortcutSlots.enumerated()), id: \.offset) { i, url in
@@ -452,8 +452,8 @@ struct PlayerView: View {
                     Button { model.runShortcut(i) } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.07))
-                            Text("\(i + 1)")
-                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                            Image(systemName: model.shortcutGlyph(i))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(width: Self.quickDiameter, height: Self.quickDiameter)

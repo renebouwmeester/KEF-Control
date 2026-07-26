@@ -23,6 +23,7 @@ final class SettingsSheetSession: ObservableObject {
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
     @Published var shortcutValues: [String]      // Shortcut names, "" = empty
+    @Published var shortcutGlyphs: [String]      // SF Symbols, "" = from name
     @Published var webhookValues: [String]       // GET URLs, "" = empty
     /// Cached shortcut names for the picker — iOS apps can't enumerate the
     /// Shortcuts library, so this comes from the Mac (same iCloud-synced
@@ -42,11 +43,22 @@ final class SettingsSheetSession: ObservableObject {
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
         shortcutValues = model.shortcutSlots
+        shortcutGlyphs = model.shortcutGlyphs
         webhookValues = model.webhookSlots
         // Slot names always appear in the picker, even if the cache is stale.
         for name in shortcutValues where !name.isEmpty && !knownShortcuts.contains(name) {
             knownShortcuts.append(name)
         }
+    }
+
+    /// What the slot's circle draws while you're editing: the chosen glyph,
+    /// else the one its name suggests.
+    func glyph(slot: Int) -> String {
+        if shortcutGlyphs.indices.contains(slot), !shortcutGlyphs[slot].isEmpty {
+            return shortcutGlyphs[slot]
+        }
+        return SpeakerModel.guessedGlyph(for: shortcutValues.indices.contains(slot)
+                                         ? shortcutValues[slot] : "")
     }
 
     func rememberShortcut(_ name: String) {
@@ -97,6 +109,7 @@ final class SettingsSheetSession: ObservableObject {
             })
         }
         model.setShortcutSlots(shortcutValues)
+        model.setShortcutGlyphs(shortcutGlyphs)
         model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
@@ -272,8 +285,8 @@ struct SettingsSheet: View {
                             Circle().fill(session.shortcutValues[i].isEmpty
                                           ? Color.white.opacity(0.06)
                                           : Color.white.opacity(0.14))
-                            Text("\(i + 1)")
-                                .font(.footnote.weight(.semibold).monospacedDigit())
+                            Image(systemName: session.glyph(slot: i))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(session.shortcutValues[i].isEmpty
                                                  ? .tertiary : .secondary)
                         }
@@ -289,7 +302,7 @@ struct SettingsSheet: View {
         } header: {
             Text("Shortcuts")
         } footer: {
-            Text("Each slot appears as a numbered button in the quick row "
+            Text("Each slot appears as a button in the quick row "
                  + "and runs that Apple Shortcut. iOS has to hop through the "
                  + "Shortcuts app — you return here automatically when it "
                  + "finishes.")
@@ -366,7 +379,7 @@ extension SettingsSheet {
         } header: {
             Text("Webhooks")
         } footer: {
-            Text("Each slot appears as a numbered button in the quick row "
+            Text("Each slot appears as a button in the quick row "
                  + "and fires a GET request at its URL.")
         }
     }
@@ -423,11 +436,65 @@ struct ShortcutPickerScreen: View {
                      + "to Clipboard, then tap refresh. The Mac app seeds "
                      + "this list too — the library syncs via iCloud.")
             }
+            glyphSection
         }
         .searchable(text: $search, prompt: "Search shortcuts")
         .tint(Color.phoneAccent)
         .navigationTitle("Slot \(slot + 1)")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    /// Icon grid. iOS keeps a Shortcut's own glyph to itself, so the button
+    /// gets one of ours — automatic reads it off the name.
+    private var glyphSection: some View {
+        Section {
+            Button {
+                session.shortcutGlyphs[slot] = ""
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: session.glyph(slot: slot))
+                        .font(.system(size: 15, weight: .medium))
+                        .frame(width: 26)
+                    Text("Automatic").foregroundStyle(.white)
+                    Spacer()
+                    if session.shortcutGlyphs[slot].isEmpty {
+                        Image(systemName: "checkmark").foregroundStyle(Color.phoneAccent)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8),
+                                     count: 6), spacing: 10) {
+                ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
+                    let picked = session.shortcutGlyphs[slot] == name
+                    Button {
+                        session.shortcutGlyphs[slot] = name
+                    } label: {
+                        Image(systemName: name)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(picked ? AnyShapeStyle(Color.phoneAccent)
+                                                    : AnyShapeStyle(.white))
+                            .frame(width: 38, height: 38)
+                            .background {
+                                Circle().fill(picked ? Color.phoneAccent.opacity(0.22)
+                                                     : Color.white.opacity(0.07))
+                            }
+                            .overlay {
+                                if picked {
+                                    Circle().strokeBorder(Color.phoneAccent, lineWidth: 1)
+                                }
+                            }
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 4)
+        } header: {
+            Text("Icon")
+        }
     }
 
     private func row(name: String, label: String) -> some View {

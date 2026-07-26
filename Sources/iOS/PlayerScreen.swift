@@ -27,8 +27,8 @@ struct PlayerScreen: View {
             switch self {
             case .presets:   return "speaker.wave.2.circle"
             case .radio:     return "music.microphone.circle"
-            case .shortcuts: return "bolt.circle"
-            case .webhooks:  return "link.circle"
+            case .shortcuts: return "link.circle"
+            case .webhooks:  return "bolt.circle"
             }
         }
     }
@@ -537,7 +537,8 @@ struct PlayerScreen: View {
 
     @State private var shortcutRuns = 0
 
-    /// Numbered circles running the slot's Apple Shortcut. Running hops to
+    /// Circles running the slot's Apple Shortcut, each with its own glyph.
+    /// Running hops to
     /// the Shortcuts app briefly (no headless API on iOS), so the haptic
     /// mostly marks the handoff.
     private var shortcutContent: some View {
@@ -550,8 +551,8 @@ struct PlayerScreen: View {
                     } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.08))
-                            Text("\(i + 1)")
-                                .font(.subheadline.weight(.semibold).monospacedDigit())
+                            Image(systemName: model.shortcutGlyph(i))
+                                .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(width: Self.presetDiameter, height: Self.presetDiameter)
