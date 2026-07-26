@@ -267,7 +267,7 @@ struct SettingsView: View {
             }
             .padding(12)
         }
-        .frame(width: 720, height: 540)
+        .frame(width: 820, height: 560)
     }
 
     // MARK: tabs
@@ -658,7 +658,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     init(model: SpeakerModel, onFinish: @escaping () -> Void) {
         self.onFinish = onFinish
         self.session = SettingsSession(model: model)
-        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 720, height: 540),
+        let win = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 820, height: 560),
                            styleMask: [.titled, .closable], backing: .buffered, defer: false)
         win.title = "KEF Control Settings"
         super.init(window: win)
@@ -673,7 +673,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             onCancel: { [weak self] in self?.window?.close() }
         )
         win.contentView = NSHostingView(rootView: view)
-        win.setContentSize(NSSize(width: 720, height: 540))
+        win.setContentSize(NSSize(width: 820, height: 560))
     }
 
     required init?(coder: NSCoder) { fatalError() }
