@@ -22,9 +22,20 @@ final class SettingsSheetSession: ObservableObject {
     @Published var sourceRows: [SourceRow]
     @Published var presetValues: [String]        // "" = empty slot
     @Published var radioSelection: [String]      // station path, "" = empty
-    @Published var shortcutValues: [String]      // Shortcut names, "" = empty
-    @Published var shortcutGlyphs: [String]      // SF Symbols, "" = from name
-    @Published var webhookValues: [String]       // GET URLs, "" = empty
+    /// One row per slot rather than parallel arrays: dragging has to carry a
+    /// slot's name and its icon together, and ForEach can only reorder what
+    /// it can identify. Same shape as the Mac settings.
+    struct ShortcutRow: Identifiable {
+        let id = UUID()
+        var name: String        // "" = empty slot
+        var glyph: String       // "" = derive from the name
+    }
+    struct WebhookRow: Identifiable {
+        let id = UUID()
+        var url: String         // "" = empty slot
+    }
+    @Published var shortcutRows: [ShortcutRow]
+    @Published var webhookRows: [WebhookRow]
     /// Cached shortcut names for the picker — iOS apps can't enumerate the
     /// Shortcuts library, so this comes from the Mac (same iCloud-synced
     /// library) or a clipboard import; free-typed names merge in.
@@ -42,23 +53,47 @@ final class SettingsSheetSession: ObservableObject {
         }
         presetValues = model.presetSlots.map { $0 > 0 ? String($0) : "" }
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
-        shortcutValues = model.shortcutSlots
-        shortcutGlyphs = model.shortcutGlyphs
-        webhookValues = model.webhookSlots
+        shortcutRows = (0..<6).map { i in
+            ShortcutRow(name: model.shortcutSlots.indices.contains(i)
+                              ? model.shortcutSlots[i] : "",
+                        glyph: model.shortcutGlyphs.indices.contains(i)
+                               ? model.shortcutGlyphs[i] : "")
+        }
+        webhookRows = (0..<6).map { i in
+            WebhookRow(url: model.webhookSlots.indices.contains(i)
+                            ? model.webhookSlots[i] : "")
+        }
         // Slot names always appear in the picker, even if the cache is stale.
-        for name in shortcutValues where !name.isEmpty && !knownShortcuts.contains(name) {
-            knownShortcuts.append(name)
+        for row in shortcutRows where !row.name.isEmpty && !knownShortcuts.contains(row.name) {
+            knownShortcuts.append(row.name)
         }
     }
 
-    /// What the slot's circle draws while you're editing: the chosen glyph,
-    /// else the one its name suggests.
-    func glyph(slot: Int) -> String {
-        if shortcutGlyphs.indices.contains(slot), !shortcutGlyphs[slot].isEmpty {
-            return shortcutGlyphs[slot]
-        }
-        return SpeakerModel.guessedGlyph(for: shortcutValues.indices.contains(slot)
-                                         ? shortcutValues[slot] : "")
+    func row(_ id: UUID) -> ShortcutRow? { shortcutRows.first { $0.id == id } }
+
+    func shortcutPosition(of id: UUID) -> Int {
+        (shortcutRows.firstIndex { $0.id == id } ?? 0) + 1
+    }
+
+    func setName(_ name: String, for id: UUID) {
+        guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
+        shortcutRows[i].name = name
+    }
+
+    func setGlyph(_ glyph: String, for id: UUID) {
+        guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
+        shortcutRows[i].glyph = glyph
+    }
+
+    /// Which quick-row button a webhook row will be: its place in the list.
+    func position(of id: UUID) -> Int {
+        (webhookRows.firstIndex { $0.id == id } ?? 0) + 1
+    }
+
+    /// What a row's circle draws: the chosen glyph, else the one its name
+    /// suggests.
+    static func glyph(for row: ShortcutRow) -> String {
+        row.glyph.isEmpty ? SpeakerModel.guessedGlyph(for: row.name) : row.glyph
     }
 
     func rememberShortcut(_ name: String) {
@@ -76,8 +111,8 @@ final class SettingsSheetSession: ObservableObject {
             .filter { !$0.isEmpty }
         guard names.count > 1 else { return 0 }
         var merged = names
-        for slot in shortcutValues where !slot.isEmpty && !merged.contains(slot) {
-            merged.append(slot)
+        for row in shortcutRows where !row.name.isEmpty && !merged.contains(row.name) {
+            merged.append(row.name)
         }
         knownShortcuts = merged
         UserDefaults.standard.set(knownShortcuts, forKey: "KnownShortcuts")
@@ -108,9 +143,9 @@ final class SettingsSheetSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
-        model.setShortcutSlots(shortcutValues)
-        model.setShortcutGlyphs(shortcutGlyphs)
-        model.setWebhookSlots(webhookValues)
+        model.setShortcutSlots(shortcutRows.map(\.name))
+        model.setShortcutGlyphs(shortcutRows.map(\.glyph))
+        model.setWebhookSlots(webhookRows.map(\.url))
         model.setSpeakerIP(ipText)
     }
 }
@@ -276,28 +311,31 @@ struct SettingsSheet: View {
 
     private var shortcutSection: some View {
         Section {
-            ForEach(0..<6, id: \.self) { i in
+            ForEach($session.shortcutRows) { $row in
                 NavigationLink {
-                    ShortcutPickerScreen(session: session, slot: i)
+                    ShortcutPickerScreen(session: session, rowID: row.id)
                 } label: {
                     HStack(spacing: 12) {
                         ZStack {
-                            Circle().fill(session.shortcutValues[i].isEmpty
+                            Circle().fill(row.name.isEmpty
                                           ? Color.white.opacity(0.06)
                                           : Color.white.opacity(0.14))
-                            Image(systemName: session.glyph(slot: i))
+                            Image(systemName: SettingsSheetSession.glyph(for: row))
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(session.shortcutValues[i].isEmpty
-                                                 ? .tertiary : .secondary)
+                                .foregroundStyle(row.name.isEmpty ? .tertiary : .secondary)
                         }
                         .frame(width: 26, height: 26)
-                        Text(session.shortcutValues[i].isEmpty
-                             ? "—" : session.shortcutValues[i])
-                            .foregroundStyle(session.shortcutValues[i].isEmpty
-                                             ? .secondary : .primary)
+                        Text(row.name.isEmpty ? "—" : row.name)
+                            .foregroundStyle(row.name.isEmpty ? .secondary : .primary)
                             .lineLimit(1)
                     }
                 }
+            }
+            NavigationLink {
+                SlotOrderScreen(session: session, kind: .shortcuts)
+            } label: {
+                Label("Reorder slots", systemImage: "arrow.up.arrow.down")
+                    .font(.callout)
             }
         } header: {
             Text("Shortcuts")
@@ -355,26 +393,30 @@ extension SettingsSheet {
         Section {
             // A numbered circle like the quick-row buttons, with the URL
             // flowing left-aligned beside it; long URLs wrap.
-            ForEach(0..<6, id: \.self) { i in
+            ForEach($session.webhookRows) { $row in
                 HStack(alignment: .top, spacing: 12) {
                     ZStack {
-                        Circle().fill(session.webhookValues[i].isEmpty
+                        Circle().fill(row.url.isEmpty
                                       ? Color.white.opacity(0.06)
                                       : Color.white.opacity(0.14))
-                        Text("\(i + 1)")
+                        Text("\(session.position(of: row.id))")
                             .font(.footnote.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(session.webhookValues[i].isEmpty
-                                             ? .tertiary : .secondary)
+                            .foregroundStyle(row.url.isEmpty ? .tertiary : .secondary)
                     }
                     .frame(width: 26, height: 26)
-                    TextField("https://…", text: $session.webhookValues[i],
-                              axis: .vertical)
+                    TextField("https://…", text: $row.url, axis: .vertical)
                         .font(.callout)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .lineLimit(1...4)
                 }
+            }
+            NavigationLink {
+                SlotOrderScreen(session: session, kind: .webhooks)
+            } label: {
+                Label("Reorder slots", systemImage: "arrow.up.arrow.down")
+                    .font(.callout)
             }
         } header: {
             Text("Webhooks")
@@ -385,12 +427,76 @@ extension SettingsSheet {
     }
 }
 
+/// Drag the six slots into order. A screen of its own: rows only drag in a
+/// List's edit mode, and edit mode swallows the taps the settings rows need
+/// for picking a shortcut or typing a URL.
+struct SlotOrderScreen: View {
+    @ObservedObject var session: SettingsSheetSession
+    enum Kind { case shortcuts, webhooks }
+    let kind: Kind
+
+    private var shortcutRows: some View {
+        ForEach(session.shortcutRows) { row in
+            HStack(spacing: 12) {
+                Image(systemName: SettingsSheetSession.glyph(for: row))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(row.name.isEmpty ? AnyShapeStyle(.tertiary)
+                                                      : AnyShapeStyle(.secondary))
+                    .frame(width: 22)
+                Text(row.name.isEmpty ? "—" : row.name)
+                    .foregroundStyle(row.name.isEmpty ? AnyShapeStyle(.secondary)
+                                                      : AnyShapeStyle(Color.white))
+                    .lineLimit(1)
+            }
+        }
+        .onMove { session.shortcutRows.move(fromOffsets: $0, toOffset: $1) }
+    }
+
+    private var webhookRows: some View {
+        ForEach(session.webhookRows) { row in
+            HStack(spacing: 12) {
+                Text("\(session.position(of: row.id))")
+                    .font(.footnote.weight(.semibold).monospacedDigit())
+                    .foregroundStyle(row.url.isEmpty ? AnyShapeStyle(.tertiary)
+                                                     : AnyShapeStyle(.secondary))
+                    .frame(width: 22)
+                Text(row.url.isEmpty ? "—" : row.url)
+                    .foregroundStyle(row.url.isEmpty ? AnyShapeStyle(.secondary)
+                                                     : AnyShapeStyle(Color.white))
+                    .lineLimit(1).truncationMode(.middle)
+            }
+        }
+        .onMove { session.webhookRows.move(fromOffsets: $0, toOffset: $1) }
+    }
+
+    var body: some View {
+        List {
+            // Each branch in its own property: a switch inside the List's
+            // builder made the compiler reach for ForEach's Binding overload.
+            if kind == .shortcuts { shortcutRows } else { webhookRows }
+        }
+        .environment(\.editMode, .constant(.active))
+    }
+
+    private func visibleBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { session.sourceRows.first(where: { $0.id == id })?.visible ?? true },
+            set: { value in
+                if let i = session.sourceRows.firstIndex(where: { $0.id == id }) {
+                    session.sourceRows[i].visible = value
+                }
+            }
+        )
+    }
+}
+
+
 /// Searchable picker over the cached shortcut-name list, with free entry
 /// and a clipboard refresh — the closest iOS allows to browsing the
 /// Shortcuts library.
 struct ShortcutPickerScreen: View {
     @ObservedObject var session: SettingsSheetSession
-    let slot: Int
+    let rowID: UUID
     @Environment(\.dismiss) private var dismiss
     @State private var search = ""
     @State private var custom = ""
@@ -419,7 +525,7 @@ struct ShortcutPickerScreen: View {
                         let name = custom.trimmingCharacters(in: .whitespaces)
                         guard !name.isEmpty else { return }
                         session.rememberShortcut(name)
-                        session.shortcutValues[slot] = name
+                        session.setName(name, for: rowID)
                         dismiss()
                     }
                 Button {
@@ -441,7 +547,7 @@ struct ShortcutPickerScreen: View {
         }
         .searchable(text: $search, prompt: "Search shortcuts")
         .tint(Color.phoneAccent)
-        .navigationTitle("Slot \(slot + 1)")
+        .navigationTitle("Slot \(session.shortcutPosition(of: rowID))")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -450,15 +556,16 @@ struct ShortcutPickerScreen: View {
     private var glyphSection: some View {
         Section {
             Button {
-                session.shortcutGlyphs[slot] = ""
+                session.setGlyph("", for: rowID)
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: session.glyph(slot: slot))
+                    Image(systemName: SettingsSheetSession.glyph(
+                              for: session.row(rowID) ?? .init(name: "", glyph: "")))
                         .font(.system(size: 15, weight: .medium))
                         .frame(width: 26)
                     Text("Automatic").foregroundStyle(.white)
                     Spacer()
-                    if session.shortcutGlyphs[slot].isEmpty {
+                    if session.row(rowID)?.glyph.isEmpty ?? true {
                         Image(systemName: "checkmark").foregroundStyle(Color.phoneAccent)
                     }
                 }
@@ -469,9 +576,9 @@ struct ShortcutPickerScreen: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8),
                                      count: 6), spacing: 10) {
                 ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
-                    let picked = session.shortcutGlyphs[slot] == name
+                    let picked = session.row(rowID)?.glyph == name
                     Button {
-                        session.shortcutGlyphs[slot] = name
+                        session.setGlyph(name, for: rowID)
                     } label: {
                         Image(systemName: name)
                             .font(.system(size: 15, weight: .medium))
@@ -500,7 +607,7 @@ struct ShortcutPickerScreen: View {
 
     private func row(name: String, label: String) -> some View {
         Button {
-            session.shortcutValues[slot] = name
+            session.setName(name, for: rowID)
             dismiss()
         } label: {
             HStack {
@@ -508,7 +615,7 @@ struct ShortcutPickerScreen: View {
                     .foregroundStyle(.white)
                     .lineLimit(1)
                 Spacer()
-                if session.shortcutValues[slot] == name {
+                if session.row(rowID)?.name == name {
                     Image(systemName: "checkmark")
                         .foregroundStyle(Color.phoneAccent)
                 }
