@@ -362,21 +362,14 @@ struct SettingsSheet: View {
                 Label("Sync my shortcuts", systemImage: "arrow.triangle.2.circlepath")
                     .font(.callout)
             }
-            Button {
-                ShortcutInstaller.shared.present()
-            } label: {
-                Label("Install the sync shortcut", systemImage: "square.and.arrow.down")
-                    .font(.callout)
-            }
         } header: {
             Text("Shortcuts")
         } footer: {
             Text(syncedCount.map { "Synced \($0) shortcut names." }
                  ?? ("Each slot appears as a button in the quick row and runs "
                      + "that Apple Shortcut. iOS can't read your Shortcuts "
-                     + "library, so tap Sync to have the helper shortcut hand "
-                     + "the names over — install it once with the link below "
-                     + "it."))
+                     + "library, so tap Sync: the KEF Control Sync shortcut "
+                     + "hands the names over."))
         }
     }
 }
@@ -457,40 +450,6 @@ extension SettingsSheet {
             Text("Each slot appears as a button in the quick row "
                  + "and fires a GET request at its URL.")
         }
-    }
-}
-
-/// Hands the bundled helper to the Shortcuts app. A share sheet doesn't do
-/// it — Shortcuts isn't a share destination for .shortcut files — but the
-/// document "Open in" menu lists it, which is the documented way in.
-final class ShortcutInstaller: NSObject, UIDocumentInteractionControllerDelegate {
-    static let shared = ShortcutInstaller()
-    private var controller: UIDocumentInteractionController?
-
-    @discardableResult
-    func present() -> Bool {
-        guard let src = Bundle.main.url(forResource: "KEF Control Sync",
-                                        withExtension: "shortcut"),
-              let scene = UIApplication.shared.connectedScenes
-                  .compactMap({ $0 as? UIWindowScene }).first,
-              let root = scene.windows.first(where: \.isKeyWindow)?.rootViewController
-        else { return false }
-
-        // Hand over a copy: the bundle is read-only and Shortcuts wants to
-        // take the file for itself.
-        let dst = FileManager.default.temporaryDirectory
-            .appendingPathComponent("KEF Control Sync.shortcut")
-        try? FileManager.default.removeItem(at: dst)
-        try? FileManager.default.copyItem(at: src, to: dst)
-
-        let c = UIDocumentInteractionController(url: dst)
-        c.uti = "com.apple.shortcuts.shortcut"
-        c.delegate = self
-        controller = c
-
-        var top = root
-        while let presented = top.presentedViewController { top = presented }
-        return c.presentOpenInMenu(from: top.view.bounds, in: top.view, animated: true)
     }
 }
 
