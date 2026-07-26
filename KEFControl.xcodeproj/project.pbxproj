@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		055B661EC4B04EBA591CE75D /* SettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2581F3CDE472834DD93B7ADE /* SettingsSheet.swift */; };
+		0C6DAF4CA20B2637F1E82FCE /* KEF Control Sync.shortcut in Resources */ = {isa = PBXBuildFile; fileRef = EFD77803C0C6744509D0DD76 /* KEF Control Sync.shortcut */; };
 		320316FAB4B0B663B6EA94FD /* SpeakerDiscovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C1BB7B474F1EC3F7DDA7509 /* SpeakerDiscovery.swift */; };
 		39F9A55E25BB1B5B331B0362 /* Platform.swift in Sources */ = {isa = PBXBuildFile; fileRef = E28A9D34EAED61B1FBA39E7C /* Platform.swift */; };
 		52555DDCDF4AA69004FD96C2 /* KEFAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70EC30DC5CC475CCC090B938 /* KEFAPI.swift */; };
@@ -32,6 +33,7 @@
 		B4DC308E7D95E138C4BFD571 /* SpeakerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeakerModel.swift; sourceTree = "<group>"; };
 		DFBF9FD52E12AD5AA88C0A78 /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		E28A9D34EAED61B1FBA39E7C /* Platform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Platform.swift; sourceTree = "<group>"; };
+		EFD77803C0C6744509D0DD76 /* KEF Control Sync.shortcut */ = {isa = PBXFileReference; path = "KEF Control Sync.shortcut"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -80,6 +82,7 @@
 			isa = PBXGroup;
 			children = (
 				0F57FBC5ABF6B193211FD29C /* bluetooth-glyph.png */,
+				EFD77803C0C6744509D0DD76 /* KEF Control Sync.shortcut */,
 				3557313CBCA23892DF863D8A /* Sources */,
 				0E4B4E3E1694199220A3963E /* Products */,
 			);
@@ -146,6 +149,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				94C3F6C66BE81F5C6F0ABE0D /* Assets.xcassets in Resources */,
+				0C6DAF4CA20B2637F1E82FCE /* KEF Control Sync.shortcut in Resources */,
 				D7D05854F775419A9CABAF8D /* bluetooth-glyph.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

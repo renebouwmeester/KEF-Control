@@ -15,6 +15,11 @@ targets:
       - path: Sources/iOS
       - path: bluetooth-glyph.png
         buildPhase: resources
+      # Signed helper shortcut: collects the library's names, copies them and
+      # opens kefcontrol://shortcuts so the app can import them. iOS offers no
+      # API for reading the Shortcuts library, so this is the way in.
+      - path: KEF Control Sync.shortcut
+        buildPhase: resources
     scheme: {}
     info:
       path: Sources/iOS/Info.plist

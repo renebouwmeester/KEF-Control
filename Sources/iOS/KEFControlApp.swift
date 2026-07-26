@@ -33,6 +33,8 @@ struct KEFControlApp: App {
 struct ContentView: View {
     @ObservedObject var model: SpeakerModel
     @State private var showSettings = false
+    /// Set when the sync shortcut returns, so the sheet imports on open.
+    @State private var pendingShortcutImport = false
 
     var body: some View {
         ZStack {
@@ -40,11 +42,17 @@ struct ContentView: View {
             PlayerScreen(model: model, openSettings: { showSettings = true })
         }
         .sheet(isPresented: $showSettings) {
-            SettingsSheet(model: model)
+            SettingsSheet(model: model, importOnAppear: $pendingShortcutImport)
         }
-        // Landing pad for the shortcuts x-callback return; the arrival
-        // itself is the point.
-        .onOpenURL { _ in }
+        // Landing pad for the shortcuts x-callback return. Usually the
+        // arrival itself is the point; kefcontrol://shortcuts is the helper
+        // shortcut handing back the library it just copied.
+        .onOpenURL { url in
+            if url.host == "shortcuts" {
+                pendingShortcutImport = true
+                showSettings = true
+            }
+        }
     }
 
     /// A heavily blurred, saturated copy of the artwork behind everything —

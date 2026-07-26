@@ -37,8 +37,9 @@ final class SettingsSheetSession: ObservableObject {
     @Published var shortcutRows: [ShortcutRow]
     @Published var webhookRows: [WebhookRow]
     /// Cached shortcut names for the picker — iOS apps can't enumerate the
-    /// Shortcuts library, so this comes from the Mac (same iCloud-synced
-    /// library) or a clipboard import; free-typed names merge in.
+    /// Shortcuts library, so the list is imported from the clipboard by the
+    /// helper shortcut; free-typed names merge in. (There is no Mac sync:
+    /// nothing here ever read one, despite what the footer used to claim.)
     @Published var knownShortcuts: [String] =
         (UserDefaults.standard.array(forKey: "KnownShortcuts") as? [String]) ?? []
     @Published var stations: [SpeakerModel.RadioStation] = []
@@ -154,10 +155,14 @@ struct SettingsSheet: View {
     @StateObject private var session: SettingsSheetSession
     @ObservedObject private var discovery: SpeakerDiscovery
     @Environment(\.dismiss) private var dismiss
+    /// Raised by the sync shortcut's return trip: pull the names it left on
+    /// the clipboard as soon as the sheet is up.
+    @Binding var importOnAppear: Bool
 
-    init(model: SpeakerModel) {
+    init(model: SpeakerModel, importOnAppear: Binding<Bool> = .constant(false)) {
         _session = StateObject(wrappedValue: SettingsSheetSession(model: model))
         discovery = model.discovery
+        _importOnAppear = importOnAppear
     }
 
     var body: some View {
@@ -185,9 +190,18 @@ struct SettingsSheet: View {
                 }
             }
         }
-        .onAppear { discovery.start() }
+        .onAppear {
+            discovery.start()
+            if importOnAppear {
+                importOnAppear = false
+                syncedCount = session.importShortcutsFromClipboard()
+            }
+        }
         .onDisappear { discovery.stop() }
     }
+
+    /// How many names the last sync brought in, for the footer.
+    @State private var syncedCount: Int?
 
     private var speakerSection: some View {
         Section {
@@ -337,13 +351,33 @@ struct SettingsSheet: View {
                 Label("Reorder slots", systemImage: "arrow.up.arrow.down")
                     .font(.callout)
             }
+            Button {
+                // The helper collects the names, copies them, and opens us
+                // back up — the import happens on the way in.
+                if let url = URL(string:
+                    "shortcuts://run-shortcut?name=KEF%20Control%20Sync") {
+                    UIApplication.shared.open(url)
+                }
+            } label: {
+                Label("Sync my shortcuts", systemImage: "arrow.triangle.2.circlepath")
+                    .font(.callout)
+            }
+            if let helper = Bundle.main.url(forResource: "KEF Control Sync",
+                                            withExtension: "shortcut") {
+                ShareLink(item: helper) {
+                    Label("Install the sync shortcut", systemImage: "square.and.arrow.down")
+                        .font(.callout)
+                }
+            }
         } header: {
             Text("Shortcuts")
         } footer: {
-            Text("Each slot appears as a button in the quick row "
-                 + "and runs that Apple Shortcut. iOS has to hop through the "
-                 + "Shortcuts app — you return here automatically when it "
-                 + "finishes.")
+            Text(syncedCount.map { "Synced \($0) shortcut names." }
+                 ?? ("Each slot appears as a button in the quick row and runs "
+                     + "that Apple Shortcut. iOS can't read your Shortcuts "
+                     + "library, so tap Sync to have the helper shortcut hand "
+                     + "the names over — install it once with the link below "
+                     + "it."))
         }
     }
 }
@@ -539,10 +573,10 @@ struct ShortcutPickerScreen: View {
                     }
                 }
             } footer: {
-                Text("iOS apps can't read your Shortcuts library. To refresh "
-                     + "the list: in Shortcuts, run Get My Shortcuts → Copy "
-                     + "to Clipboard, then tap refresh. The Mac app seeds "
-                     + "this list too — the library syncs via iCloud.")
+                Text("iOS apps can't read your Shortcuts library, so the list "
+                     + "is imported. Tap Sync to run the helper shortcut, "
+                     + "which copies your shortcut names over and hands them "
+                     + "back here.")
             }
         }
         .searchable(text: $search, prompt: "Search shortcuts")
