@@ -43,7 +43,13 @@ final class SettingsSession: ObservableObject {
         var glyph: String       // "" = derive from the name
     }
     @Published var shortcutRows: [ShortcutRow]
-    @Published var webhookValues: [String]       // GET URLs, "" = empty
+    /// Same identified-row trick as the shortcut slots, so a URL can be
+    /// dragged into another position.
+    struct WebhookRow: Identifiable {
+        let id = UUID()
+        var url: String         // "" = empty slot
+    }
+    @Published var webhookRows: [WebhookRow]
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
     /// list are merged in so they survive a rename on the Shortcuts side.
     @Published var shortcutNames: [String] = []
@@ -83,7 +89,10 @@ final class SettingsSession: ObservableObject {
                         glyph: model.shortcutGlyphs.indices.contains(i)
                                ? model.shortcutGlyphs[i] : "")
         }
-        webhookValues = model.webhookSlots
+        webhookRows = (0..<6).map { i in
+            WebhookRow(url: model.webhookSlots.indices.contains(i)
+                            ? model.webhookSlots[i] : "")
+        }
     }
 
     /// Stations already in slots are merged in, so a saved preset survives
@@ -159,7 +168,7 @@ final class SettingsSession: ObservableObject {
         }
         model.setShortcutSlots(shortcutRows.map(\.name))
         model.setShortcutGlyphs(shortcutRows.map(\.glyph))
-        model.setWebhookSlots(webhookValues)
+        model.setWebhookSlots(webhookRows.map(\.url))
         model.setSpeakerIP(ipText)
     }
 }
@@ -317,21 +326,34 @@ struct SettingsView: View {
     }
 
     private var webhooksTab: some View {
-        Form {
-            Section {
-                ForEach(0..<6, id: \.self) { i in
-                    LabeledContent("\(i + 1)") {
-                        TextField("", text: $session.webhookValues[i],
-                                  prompt: Text("https://…"))
+        // A List, not a Form: grouped Forms don't support row dragging.
+        VStack(alignment: .leading, spacing: 8) {
+            List {
+                ForEach($session.webhookRows) { $row in
+                    HStack(spacing: 8) {
+                        Text("\(webhookPosition(row.id))")
+                            .font(.body.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16, alignment: .trailing)
+                        TextField("", text: $row.url, prompt: Text("https://…"))
                             .labelsHidden()
                     }
+                    .padding(.vertical, 2)
                 }
-            } footer: {
-                Text("Each slot appears as a numbered button in the quick row "
-                     + "and fires a GET request at its URL.")
+                .onMove { session.webhookRows.move(fromOffsets: $0, toOffset: $1) }
             }
+            .listStyle(.bordered)
+            Text("Drag to reorder — the numbered buttons in the quick row "
+                 + "follow this order, and each fires a GET at its URL.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 2)
         }
-        .formStyle(.grouped)
+        .padding(16)
+    }
+
+    private func webhookPosition(_ id: UUID) -> Int {
+        (session.webhookRows.firstIndex { $0.id == id } ?? 0) + 1
     }
 
     private var shortcutsTab: some View {
