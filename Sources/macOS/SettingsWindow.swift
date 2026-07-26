@@ -34,8 +34,15 @@ final class SettingsSession: ObservableObject {
     @Published var volumeStep: String
     @Published var showVolumeInMenuBar: Bool
     @Published var radioSelection: [String]      // station path, "" = empty
-    @Published var shortcutValues: [String]      // Shortcut names, "" = empty
-    @Published var shortcutGlyphs: [String]      // SF Symbols, "" = from name
+    /// One row per slot. A struct with a stable id, not two parallel arrays:
+    /// dragging has to carry a slot's name and its icon together, and ForEach
+    /// can only reorder something it can identify.
+    struct ShortcutRow: Identifiable {
+        let id = UUID()
+        var name: String        // "" = empty slot
+        var glyph: String       // "" = derive from the name
+    }
+    @Published var shortcutRows: [ShortcutRow]
     @Published var webhookValues: [String]       // GET URLs, "" = empty
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
     /// list are merged in so they survive a rename on the Shortcuts side.
@@ -62,8 +69,12 @@ final class SettingsSession: ObservableObject {
         volumeStep = String(ShortcutStore.volumeStep)
         showVolumeInMenuBar = model.showVolumeInMenuBar
         radioSelection = model.radioSlots.map { $0?.path ?? "" }
-        shortcutValues = model.shortcutSlots
-        shortcutGlyphs = model.shortcutGlyphs
+        shortcutRows = (0..<6).map { i in
+            ShortcutRow(name: model.shortcutSlots.indices.contains(i)
+                              ? model.shortcutSlots[i] : "",
+                        glyph: model.shortcutGlyphs.indices.contains(i)
+                               ? model.shortcutGlyphs[i] : "")
+        }
         webhookValues = model.webhookSlots
     }
 
@@ -79,14 +90,10 @@ final class SettingsSession: ObservableObject {
         stationsLoaded = true
     }
 
-    /// What a slot's button draws: the chosen glyph, else the one its name
+    /// What a row's button draws: the chosen glyph, else the one its name
     /// suggests.
-    func glyph(slot: Int) -> String {
-        if shortcutGlyphs.indices.contains(slot), !shortcutGlyphs[slot].isEmpty {
-            return shortcutGlyphs[slot]
-        }
-        return SpeakerModel.guessedGlyph(for: shortcutValues.indices.contains(slot)
-                                         ? shortcutValues[slot] : "")
+    static func glyph(for row: ShortcutRow) -> String {
+        row.glyph.isEmpty ? SpeakerModel.guessedGlyph(for: row.name) : row.glyph
     }
 
     /// `shortcuts list` enumerates the user's shortcuts — a luxury iOS
@@ -112,8 +119,8 @@ final class SettingsSession: ObservableObject {
             }
         }
         var merged = names
-        for slot in shortcutValues where !slot.isEmpty && !merged.contains(slot) {
-            merged.append(slot)
+        for row in shortcutRows where !row.name.isEmpty && !merged.contains(row.name) {
+            merged.append(row.name)
         }
         // `shortcuts list` returns them in the Shortcuts app's own order.
         shortcutNames = merged.sorted {
@@ -139,8 +146,8 @@ final class SettingsSession: ObservableObject {
                 stations.first { $0.path == path }
             })
         }
-        model.setShortcutSlots(shortcutValues)
-        model.setShortcutGlyphs(shortcutGlyphs)
+        model.setShortcutSlots(shortcutRows.map(\.name))
+        model.setShortcutGlyphs(shortcutRows.map(\.glyph))
         model.setWebhookSlots(webhookValues)
         model.setSpeakerIP(ipText)
     }
@@ -151,8 +158,8 @@ struct SettingsView: View {
     @ObservedObject var discovery: SpeakerDiscovery
     let onSave: () -> Void
     let onCancel: () -> Void
-    /// Which slot's icon grid is open, if any.
-    @State private var glyphPopover: Int?
+    /// Which row's icon grid is open, if any.
+    @State private var glyphPopover: UUID?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -317,21 +324,22 @@ struct SettingsView: View {
     }
 
     private var shortcutsTab: some View {
-        Form {
+        // A List, not a Form, for the same reason as the sources tab: grouped
+        // Forms don't support row dragging.
+        VStack(alignment: .leading, spacing: 8) {
             if !session.shortcutsLoaded {
-                Section {
-                    HStack(spacing: 8) {
-                        ProgressView().controlSize(.small)
-                        Text("Reading your shortcuts…")
-                            .foregroundStyle(.secondary)
-                    }
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("Reading your shortcuts…")
+                        .foregroundStyle(.secondary)
                 }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                Section {
-                    ForEach(0..<6, id: \.self) { i in
+                List {
+                    ForEach($session.shortcutRows) { $row in
                         HStack(spacing: 8) {
-                            glyphButton(slot: i)
-                            Picker("", selection: $session.shortcutValues[i]) {
+                            glyphButton(row: $row)
+                            Picker("", selection: $row.name) {
                                 Text("—").tag("")
                                 ForEach(session.shortcutNames, id: \.self) { name in
                                     Text(name).tag(name)
@@ -339,30 +347,35 @@ struct SettingsView: View {
                             }
                             .labelsHidden()
                         }
+                        .padding(.vertical, 2)
                     }
-                } footer: {
-                    Text("Each slot appears in the quick row and runs that "
-                         + "shortcut — headlessly, via the shortcuts command. "
-                         + "The icon is ours to choose: neither macOS nor iOS "
-                         + "lets an app read a shortcut's own glyph.")
+                    .onMove { session.shortcutRows.move(fromOffsets: $0, toOffset: $1) }
                 }
+                .listStyle(.bordered)
+                Text("Drag to reorder — the quick row follows this order. The "
+                     + "icon is ours to choose: neither macOS nor iOS lets an "
+                     + "app read a shortcut's own glyph.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 2)
             }
         }
-        .formStyle(.grouped)
+        .padding(16)
         .task { if !session.shortcutsLoaded { await session.loadShortcuts() } }
     }
 
-    /// The slot's icon, with a grid to change it. A popover, not a Menu:
+    /// The row's icon, with a grid to change it. A popover, not a Menu:
     /// macOS drops images from menu rows, so a menu of glyphs would be blank.
-    private func glyphButton(slot: Int) -> some View {
-        Button {
-            glyphPopover = glyphPopover == slot ? nil : slot
+    private func glyphButton(row: Binding<SettingsSession.ShortcutRow>) -> some View {
+        let id = row.wrappedValue.id
+        return Button {
+            glyphPopover = glyphPopover == id ? nil : id
         } label: {
             ZStack {
                 Circle().fill(Color.primary.opacity(0.07))
-                Image(systemName: session.glyph(slot: slot))
+                Image(systemName: SettingsSession.glyph(for: row.wrappedValue))
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(session.shortcutValues[slot].isEmpty
+                    .foregroundStyle(row.wrappedValue.name.isEmpty
                                      ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
             }
             .frame(width: 24, height: 24)
@@ -370,25 +383,25 @@ struct SettingsView: View {
         }
         .buttonStyle(.plain)
         .help("Icon for this slot")
-        .popover(isPresented: Binding(get: { glyphPopover == slot },
+        .popover(isPresented: Binding(get: { glyphPopover == id },
                                       set: { if !$0 { glyphPopover = nil } }),
                  arrowEdge: .bottom) {
-            glyphGrid(slot: slot)
+            glyphGrid(row: row)
         }
     }
 
-    private func glyphGrid(slot: Int) -> some View {
+    private func glyphGrid(row: Binding<SettingsSession.ShortcutRow>) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             Button {
-                session.shortcutGlyphs[slot] = ""
+                row.wrappedValue.glyph = ""
                 glyphPopover = nil
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: SpeakerModel.guessedGlyph(for: session.shortcutValues[slot]))
+                    Image(systemName: SpeakerModel.guessedGlyph(for: row.wrappedValue.name))
                         .font(.system(size: 12, weight: .medium))
                         .frame(width: 18)
                     Text("Automatic").font(.callout)
-                    if session.shortcutGlyphs[slot].isEmpty {
+                    if row.wrappedValue.glyph.isEmpty {
                         Image(systemName: "checkmark")
                             .font(.system(size: 10, weight: .bold))
                             .foregroundStyle(Color.appAccent)
@@ -403,9 +416,9 @@ struct SettingsView: View {
             LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6),
                                      count: 8), spacing: 6) {
                 ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
-                    let picked = session.shortcutGlyphs[slot] == name
+                    let picked = row.wrappedValue.glyph == name
                     Button {
-                        session.shortcutGlyphs[slot] = name
+                        row.wrappedValue.glyph = name
                         glyphPopover = nil
                     } label: {
                         Image(systemName: name)
