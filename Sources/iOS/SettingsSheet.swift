@@ -29,6 +29,7 @@ final class SettingsSheetSession: ObservableObject {
         let id = UUID()
         var name: String        // "" = empty slot
         var glyph: String       // "" = derive from the name
+        var returns: Bool       // hop back to the app when it finishes
     }
     struct WebhookRow: Identifiable {
         let id = UUID()
@@ -70,7 +71,9 @@ final class SettingsSheetSession: ObservableObject {
             ShortcutRow(name: model.shortcutSlots.indices.contains(i)
                               ? model.shortcutSlots[i] : "",
                         glyph: model.shortcutGlyphs.indices.contains(i)
-                               ? model.shortcutGlyphs[i] : "")
+                               ? model.shortcutGlyphs[i] : "",
+                        returns: model.shortcutReturns.indices.contains(i)
+                                 ? model.shortcutReturns[i] : true)
         }
         webhookRows = (0..<6).map { i in
             WebhookRow(url: model.webhookSlots.indices.contains(i)
@@ -91,6 +94,11 @@ final class SettingsSheetSession: ObservableObject {
     func setName(_ name: String, for id: UUID) {
         guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
         shortcutRows[i].name = name
+    }
+
+    func setReturns(_ on: Bool, for id: UUID) {
+        guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
+        shortcutRows[i].returns = on
     }
 
     func setGlyph(_ glyph: String, for id: UUID) {
@@ -158,6 +166,7 @@ final class SettingsSheetSession: ObservableObject {
         }
         model.setShortcutSlots(shortcutRows.map(\.name))
         model.setShortcutGlyphs(shortcutRows.map(\.glyph))
+        model.setShortcutReturns(shortcutRows.map(\.returns))
         model.setWebhookSlots(webhookRows.map(\.url))
         model.setSpeakerIP(ipText)
     }
@@ -569,6 +578,17 @@ struct ShortcutPickerScreen: View {
         List {
             glyphSection
             Section {
+                Toggle("Come back to KEF Control", isOn: Binding(
+                    get: { session.row(rowID)?.returns ?? true },
+                    set: { session.setReturns($0, for: rowID) }))
+                    .font(.callout)
+            } footer: {
+                Text("On by default: Shortcuts hands the screen back when the "
+                     + "shortcut finishes. Turn it off for a shortcut that "
+                     + "opens another app — the Apple TV Remote, say — so it "
+                     + "gets to stay there.")
+            }
+            Section {
                 row(name: "", label: "None")
                 ForEach(filtered, id: \.self) { name in
                     row(name: name, label: name)
@@ -615,7 +635,7 @@ struct ShortcutPickerScreen: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: SettingsSheetSession.glyph(
-                              for: session.row(rowID) ?? .init(name: "", glyph: "")))
+                              for: session.row(rowID) ?? .init(name: "", glyph: "", returns: true)))
                         .font(.system(size: 15, weight: .medium))
                         .frame(width: 26)
                     Text("Automatic").foregroundStyle(.white)

@@ -197,6 +197,21 @@ final class SpeakerModel: ObservableObject {
         UserDefaults.standard.set(shortcutGlyphs, forKey: "ShortcutGlyphs")
     }
 
+    /// Whether the slot hops back to us when the shortcut finishes. Off for
+    /// shortcuts whose whole point is to leave — opening the Apple TV Remote,
+    /// say — where being yanked back is the opposite of what you want.
+    @Published var shortcutReturns: [Bool] = {
+        let raw = (UserDefaults.standard.array(forKey: "ShortcutReturns") as? [Bool]) ?? []
+        return Array((raw + Array(repeating: true, count: 6)).prefix(6))
+    }()
+
+    func setShortcutReturns(_ flags: [Bool]) {
+        var f = flags
+        while f.count < 6 { f.append(true) }
+        shortcutReturns = Array(f.prefix(6))
+        UserDefaults.standard.set(shortcutReturns, forKey: "ShortcutReturns")
+    }
+
     /// The glyph to draw for a slot: the chosen one, else a guess from the
     /// shortcut's name, else a plain bolt.
     func shortcutGlyph(_ index: Int) -> String {
@@ -283,10 +298,15 @@ final class SpeakerModel: ObservableObject {
         try? task.run()
         #else
         // x-callback: Shortcuts hops back to the app (kefcontrol://) the
-        // moment the shortcut finishes, succeeds or not.
+        // moment the shortcut finishes, succeeds or not. A slot can opt out —
+        // a shortcut that opens another app shouldn't be undone by us
+        // grabbing the screen back.
+        let comesBack = shortcutReturns.indices.contains(index) ? shortcutReturns[index] : true
         guard let encoded = name.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-              let url = URL(string: "shortcuts://x-callback-url/run-shortcut?name=\(encoded)"
-                            + "&x-success=kefcontrol://&x-cancel=kefcontrol://&x-error=kefcontrol://")
+              let url = URL(string: comesBack
+                            ? "shortcuts://x-callback-url/run-shortcut?name=\(encoded)"
+                              + "&x-success=kefcontrol://&x-cancel=kefcontrol://&x-error=kefcontrol://"
+                            : "shortcuts://run-shortcut?name=\(encoded)")
         else { return }
         UIApplication.shared.open(url)
         #endif

@@ -41,6 +41,7 @@ final class SettingsSession: ObservableObject {
         let id = UUID()
         var name: String        // "" = empty slot
         var glyph: String       // "" = derive from the name
+        var returns: Bool       // hop back to the app when it finishes
     }
     @Published var shortcutRows: [ShortcutRow]
     /// Same identified-row trick as the shortcut slots, so a URL can be
@@ -99,7 +100,9 @@ final class SettingsSession: ObservableObject {
             ShortcutRow(name: model.shortcutSlots.indices.contains(i)
                               ? model.shortcutSlots[i] : "",
                         glyph: model.shortcutGlyphs.indices.contains(i)
-                               ? model.shortcutGlyphs[i] : "")
+                               ? model.shortcutGlyphs[i] : "",
+                        returns: model.shortcutReturns.indices.contains(i)
+                                 ? model.shortcutReturns[i] : true)
         }
         webhookRows = (0..<6).map { i in
             WebhookRow(url: model.webhookSlots.indices.contains(i)
@@ -180,6 +183,7 @@ final class SettingsSession: ObservableObject {
         }
         model.setShortcutSlots(shortcutRows.map(\.name))
         model.setShortcutGlyphs(shortcutRows.map(\.glyph))
+        model.setShortcutReturns(shortcutRows.map(\.returns))
         model.setWebhookSlots(webhookRows.map(\.url))
         model.setSpeakerIP(ipText)
     }
