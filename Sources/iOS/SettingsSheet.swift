@@ -34,6 +34,7 @@ final class SettingsSheetSession: ObservableObject {
     struct WebhookRow: Identifiable {
         let id = UUID()
         var url: String         // "" = empty slot
+        var glyph: String       // "" = derive from the URL's words
     }
     @Published var shortcutRows: [ShortcutRow]
     @Published var webhookRows: [WebhookRow]
@@ -102,7 +103,9 @@ final class SettingsSheetSession: ObservableObject {
         }
         webhookRows = (0..<6).map { i in
             WebhookRow(url: model.webhookSlots.indices.contains(i)
-                            ? model.webhookSlots[i] : "")
+                            ? model.webhookSlots[i] : "",
+                       glyph: model.webhookGlyphs.indices.contains(i)
+                            ? model.webhookGlyphs[i] : "")
         }
         // Slot names always appear in the picker, even if the cache is stale.
         for row in shortcutRows where !row.name.isEmpty && !knownShortcuts.contains(row.name) {
@@ -139,6 +142,16 @@ final class SettingsSheetSession: ObservableObject {
     func setReturns(_ on: Bool, for id: UUID) {
         guard let i = shortcutRows.firstIndex(where: { $0.id == id }) else { return }
         shortcutRows[i].returns = on
+    }
+
+    func setWebhookGlyph(_ glyph: String, for id: UUID) {
+        guard let i = webhookRows.firstIndex(where: { $0.id == id }) else { return }
+        webhookRows[i].glyph = glyph
+    }
+
+    /// What a webhook circle draws: the chosen glyph, else the URL's guess.
+    static func glyph(for row: WebhookRow) -> String {
+        row.glyph.isEmpty ? SpeakerModel.guessedGlyph(for: row.url) : row.glyph
     }
 
     func setGlyph(_ glyph: String, for id: UUID) {
@@ -208,6 +221,7 @@ final class SettingsSheetSession: ObservableObject {
         model.setShortcutGlyphs(shortcutRows.map(\.glyph))
         model.setShortcutReturns(shortcutRows.map(\.returns))
         model.setWebhookSlots(webhookRows.map(\.url))
+        model.setWebhookGlyphs(webhookRows.map(\.glyph))
         model.setSpeakerIP(ipText)
     }
 }
@@ -540,15 +554,23 @@ extension SettingsSheet {
             // flowing left-aligned beside it; long URLs wrap.
             ForEach($session.webhookRows) { $row in
                 HStack(alignment: .top, spacing: 12) {
-                    ZStack {
-                        Circle().fill(row.url.isEmpty
-                                      ? Color.white.opacity(0.06)
-                                      : Color.white.opacity(0.14))
-                        Text("\(session.position(of: row.id))")
-                            .font(.footnote.weight(.semibold).monospacedDigit())
-                            .foregroundStyle(row.url.isEmpty ? .tertiary : .secondary)
+                    // The circle is the way to the icon grid — the same
+                    // picker the shortcut slots have.
+                    NavigationLink {
+                        WebhookIconScreen(session: session, rowID: row.id)
+                    } label: {
+                        ZStack {
+                            Circle().fill(row.url.isEmpty
+                                          ? Color.white.opacity(0.06)
+                                          : Color.white.opacity(0.14))
+                            Image(systemName: SettingsSheetSession.glyph(for: row))
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(row.url.isEmpty ? .tertiary : .secondary)
+                        }
+                        .frame(width: 26, height: 26)
                     }
-                    .frame(width: 26, height: 26)
+                    .buttonStyle(.plain)
+                    .frame(width: 26)
                     TextField("https://…", text: $row.url, axis: .vertical)
                         .font(.callout)
                         .keyboardType(.URL)
@@ -637,6 +659,70 @@ struct SlotOrderScreen: View {
 
 
 /// Searchable picker over the cached shortcut-name list, with free entry
+/// The shortcut slots' icon grid, webhook-flavoured: Automatic reads the
+/// URL's words, the grid overrides it.
+struct WebhookIconScreen: View {
+    @ObservedObject var session: SettingsSheetSession
+    let rowID: UUID
+
+    private var row: SettingsSheetSession.WebhookRow? {
+        session.webhookRows.first { $0.id == rowID }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                Button {
+                    session.setWebhookGlyph("", for: rowID)
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: SpeakerModel.guessedGlyph(for: row?.url ?? ""))
+                            .font(.system(size: 15, weight: .medium))
+                            .frame(width: 26)
+                        Text("Automatic").foregroundStyle(.white)
+                        Spacer()
+                        if row?.glyph.isEmpty ?? true {
+                            Image(systemName: "checkmark").foregroundStyle(Color.phoneAccent)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8),
+                                         count: 6), spacing: 10) {
+                    ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
+                        let picked = row?.glyph == name
+                        Button {
+                            session.setWebhookGlyph(name, for: rowID)
+                        } label: {
+                            Image(systemName: name)
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(picked ? AnyShapeStyle(Color.phoneAccent)
+                                                        : AnyShapeStyle(.white))
+                                .frame(width: 38, height: 38)
+                                .background {
+                                    Circle().fill(picked ? Color.phoneAccent.opacity(0.22)
+                                                         : Color.white.opacity(0.07))
+                                }
+                                .overlay {
+                                    if picked {
+                                        Circle().strokeBorder(Color.phoneAccent, lineWidth: 1)
+                                    }
+                                }
+                                .contentShape(Circle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .tint(Color.phoneAccent)
+        .navigationTitle("Slot \(session.position(of: rowID))")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 /// and a clipboard refresh — the closest iOS allows to browsing the
 /// Shortcuts library.
 struct ShortcutPickerScreen: View {

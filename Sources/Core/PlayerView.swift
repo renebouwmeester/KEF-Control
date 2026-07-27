@@ -432,8 +432,8 @@ struct PlayerView: View {
                     Button { model.fireWebhook(i) } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.07))
-                            Text("\(i + 1)")
-                                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                            Image(systemName: model.webhookGlyph(i))
+                                .font(.system(size: 13, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(width: Self.quickDiameter, height: Self.quickDiameter)

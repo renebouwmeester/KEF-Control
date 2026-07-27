@@ -329,6 +329,30 @@ final class SpeakerModel: ObservableObject {
 
     var hasWebhooks: Bool { webhookSlots.contains { !$0.isEmpty } }
 
+    /// One SF Symbol per webhook slot; "" means "read it off the URL" —
+    /// the same arrangement the shortcut slots have.
+    @Published var webhookGlyphs: [String] = {
+        let raw = (UserDefaults.standard.array(forKey: "WebhookGlyphs") as? [String]) ?? []
+        return Array((raw + Array(repeating: "", count: 6)).prefix(6))
+    }()
+
+    func setWebhookGlyphs(_ glyphs: [String]) {
+        var g = glyphs
+        while g.count < 6 { g.append("") }
+        webhookGlyphs = Array(g.prefix(6))
+        UserDefaults.standard.set(webhookGlyphs, forKey: "WebhookGlyphs")
+    }
+
+    /// The glyph a webhook circle draws: the chosen one, else a guess from
+    /// the words in its URL, else the bolt.
+    func webhookGlyph(_ index: Int) -> String {
+        if webhookGlyphs.indices.contains(index), !webhookGlyphs[index].isEmpty {
+            return webhookGlyphs[index]
+        }
+        let url = webhookSlots.indices.contains(index) ? webhookSlots[index] : ""
+        return Self.guessedGlyph(for: url)
+    }
+
     /// Fire-and-forget GET.
     func fireWebhook(_ index: Int) {
         guard webhookSlots.indices.contains(index),

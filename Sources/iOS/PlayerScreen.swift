@@ -524,8 +524,8 @@ struct PlayerScreen: View {
                     } label: {
                         ZStack {
                             Circle().fill(Color.white.opacity(0.08))
-                            Text("\(i + 1)")
-                                .font(.subheadline.weight(.semibold).monospacedDigit())
+                            Image(systemName: model.webhookGlyph(i))
+                                .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(width: Self.presetDiameter, height: Self.presetDiameter)

@@ -49,6 +49,7 @@ final class SettingsSession: ObservableObject {
     struct WebhookRow: Identifiable {
         let id = UUID()
         var url: String         // "" = empty slot
+        var glyph: String       // "" = derive from the URL's words
     }
     @Published var webhookRows: [WebhookRow]
     /// Installed shortcuts, from `shortcuts list`; slot names not in the
@@ -130,7 +131,9 @@ final class SettingsSession: ObservableObject {
         }
         webhookRows = (0..<6).map { i in
             WebhookRow(url: model.webhookSlots.indices.contains(i)
-                            ? model.webhookSlots[i] : "")
+                            ? model.webhookSlots[i] : "",
+                       glyph: model.webhookGlyphs.indices.contains(i)
+                            ? model.webhookGlyphs[i] : "")
         }
     }
 
@@ -224,6 +227,7 @@ final class SettingsSession: ObservableObject {
         model.setShortcutGlyphs(shortcutRows.map(\.glyph))
         model.setShortcutReturns(shortcutRows.map(\.returns))
         model.setWebhookSlots(webhookRows.map(\.url))
+        model.setWebhookGlyphs(webhookRows.map(\.glyph))
         model.setSpeakerIP(ipText)
     }
 }
@@ -422,6 +426,7 @@ struct SettingsView: View {
                             .font(.body.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .frame(width: 16, alignment: .trailing)
+                        webhookGlyphButton(row: $row)
                         TextField("", text: $row.url, prompt: Text("https://…"))
                             .labelsHidden()
                     }
@@ -437,6 +442,84 @@ struct SettingsView: View {
                 .padding(.horizontal, 2)
         }
         .padding(16)
+    }
+
+    /// The shortcut rows' icon button, webhook-flavoured: same popover,
+    /// same grid, automatic reads the URL's words.
+    private func webhookGlyphButton(row: Binding<SettingsSession.WebhookRow>) -> some View {
+        let id = row.wrappedValue.id
+        return Button {
+            glyphPopover = glyphPopover == id ? nil : id
+        } label: {
+            ZStack {
+                Circle().fill(Color.primary.opacity(0.07))
+                Image(systemName: row.wrappedValue.glyph.isEmpty
+                      ? SpeakerModel.guessedGlyph(for: row.wrappedValue.url)
+                      : row.wrappedValue.glyph)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(row.wrappedValue.url.isEmpty
+                                     ? AnyShapeStyle(.tertiary) : AnyShapeStyle(.secondary))
+            }
+            .frame(width: 24, height: 24)
+            .contentShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .help("Icon for this slot")
+        .popover(isPresented: Binding(get: { glyphPopover == id },
+                                      set: { if !$0 { glyphPopover = nil } }),
+                 arrowEdge: .bottom) {
+            webhookGlyphGrid(row: row)
+        }
+    }
+
+    private func webhookGlyphGrid(row: Binding<SettingsSession.WebhookRow>) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                row.wrappedValue.glyph = ""
+                glyphPopover = nil
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: SpeakerModel.guessedGlyph(for: row.wrappedValue.url))
+                        .font(.system(size: 12, weight: .medium))
+                        .frame(width: 18)
+                    Text("Automatic").font(.callout)
+                    if row.wrappedValue.glyph.isEmpty {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(Color.appAccent)
+                    }
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+
+            Divider()
+
+            LazyVGrid(columns: Array(repeating: GridItem(.fixed(30), spacing: 6),
+                                     count: 8), spacing: 6) {
+                ForEach(SpeakerModel.glyphChoices, id: \.self) { name in
+                    let picked = row.wrappedValue.glyph == name
+                    Button {
+                        row.wrappedValue.glyph = name
+                        glyphPopover = nil
+                    } label: {
+                        Image(systemName: name)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundStyle(picked ? AnyShapeStyle(Color.appAccent)
+                                                    : AnyShapeStyle(.primary))
+                            .frame(width: 28, height: 28)
+                            .background {
+                                Circle().fill(picked ? Color.appAccent.opacity(0.20)
+                                                     : Color.primary.opacity(0.06))
+                            }
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(name)
+                }
+            }
+        }
+        .padding(12)
     }
 
     private func webhookPosition(_ id: UUID) -> Int {
