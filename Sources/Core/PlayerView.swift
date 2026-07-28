@@ -157,7 +157,7 @@ struct PlayerView: View {
             .contentShape(Rectangle().inset(by: -8))   // easier to grab than 3 pt
             .gesture(model.displayCanSeek && length > 0 ? scrubGesture(width: geo.size.width, length: length) : nil)
         }
-        .frame(height: 3)
+        .frame(height: 4)   // the gap under the artwork, not the line
     }
 
     /// Elapsed / remaining under the progress line, with the stream format as
