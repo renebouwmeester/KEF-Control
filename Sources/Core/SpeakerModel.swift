@@ -2,6 +2,7 @@
 // presets. Platform-neutral — artwork goes through PlatformImage (Platform.swift).
 import SwiftUI
 import Combine
+import Network
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -571,6 +572,51 @@ final class SpeakerModel: ObservableObject {
         }
     }
 
+    private var pathMonitor: NWPathMonitor?
+    private var wakeObserver: Any?
+
+    /// Rebuild the clients whenever the network underfoot changes — a
+    /// different Wi-Fi, a VPN coming up or going down, the lid opening.
+    ///
+    /// The sockets that were alive on the old network come back dead but
+    /// stay pooled, so every call queues behind them and times out: the
+    /// speaker looks gone while it sits there answering. A fresh client is
+    /// the whole cure; nothing else recovers on its own.
+    private func watchNetwork() {
+        let monitor = NWPathMonitor()
+        pathMonitor = monitor
+        var lastInterfaces: String?
+        monitor.pathUpdateHandler = { path in
+            let signature = path.availableInterfaces.map(\.name).joined(separator: ",")
+                + (path.status == .satisfied ? "+up" : "+down")
+            guard signature != lastInterfaces else { return }
+            lastInterfaces = signature
+            Task { @MainActor [weak self] in await self?.reconnect() }
+        }
+        monitor.start(queue: .global(qos: .utility))
+
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.reconnect() }
+        }
+    }
+
+    /// Throw the connections away and go looking again, patiently: Wi-Fi
+    /// and VPNs take their time settling.
+    private func reconnect() async {
+        let ip = api.ip
+        api = KEFAPI(ip: ip)
+        auth = KEFAuthChannel(ip: ip)
+        for delay in [1.0, 2.0, 3.0, 5.0, 8.0] {
+            try? await Task.sleep(for: .seconds(delay))
+            await refresh()
+            if reachable { return }
+            api = KEFAPI(ip: ip)
+            auth = KEFAuthChannel(ip: ip)
+        }
+    }
+
     /// Point the app at a different speaker; persists and rebuilds the API clients.
     func setSpeakerIP(_ ip: String) {
         let trimmed = ip.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -753,6 +799,7 @@ final class SpeakerModel: ObservableObject {
         // primes the macOS Local Network prompt (see autoDiscover) so first-run
         // access works without opening Settings.
         autoDiscover()
+        watchNetwork()
         Task { await pollLoop() }
         // advance the progress line between polls
         Task {
