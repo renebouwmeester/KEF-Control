@@ -245,13 +245,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
 
-    private var cachedAnchor: (bottom: CGFloat, left: CGFloat)?
+    private var cachedAnchor: (bottom: CGFloat, centerX: CGFloat)?
 
     private func refreshAnchor() {
         if let a = statusItemAnchor() {
             cachedAnchor = a
             UserDefaults.standard.set(a.bottom, forKey: "PanelAnchorBottom")
-            UserDefaults.standard.set(a.left, forKey: "PanelAnchorLeft")
+            UserDefaults.standard.set(a.centerX, forKey: "PanelAnchorCenterX")
         }
     }
 
@@ -260,8 +260,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// stable across launches, so this is right the moment the app starts.
     private func loadPersistedAnchor() {
         let d = UserDefaults.standard
-        if d.object(forKey: "PanelAnchorBottom") != nil {
-            cachedAnchor = (d.double(forKey: "PanelAnchorBottom"), d.double(forKey: "PanelAnchorLeft"))
+        if d.object(forKey: "PanelAnchorBottom") != nil,
+           d.object(forKey: "PanelAnchorCenterX") != nil {
+            cachedAnchor = (d.double(forKey: "PanelAnchorBottom"), d.double(forKey: "PanelAnchorCenterX"))
         }
     }
 
@@ -279,7 +280,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Where the status icon actually is: the in-process button window when it
     /// has valid geometry, else the window server's answer (the in-process
     /// window can report stale frames on macOS 27's out-of-process menu bar).
-    private func statusItemAnchor() -> (bottom: CGFloat, left: CGFloat)? {
+    private func statusItemAnchor() -> (bottom: CGFloat, centerX: CGFloat)? {
         // The proxy window sometimes reports an "unplaced" default slot flush
         // against the screen's right edge (x = screenWidth - iconWidth). A real
         // status icon is never there — Control Center and friends occupy that
@@ -287,7 +288,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let w = statusItem.button?.window, let s = w.screen,
            w.frame.width > 0, w.frame.minY > s.frame.midY,
            w.frame.maxX < s.frame.maxX - 1 {
-            return (w.frame.minY, w.frame.minX)
+            return (w.frame.minY, w.frame.midX)
         }
         guard let list = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID)
                 as? [[String: Any]] else { return nil }
@@ -301,23 +302,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                   let bounds = CGRect(dictionaryRepresentation: boundsDict as! CFDictionary),
                   bounds.width > 0 else { continue }
             // CG coordinates are top-left origin; convert to Cocoa
-            return (primaryHeight - bounds.maxY, bounds.minX)
+            return (primaryHeight - bounds.maxY, bounds.midX)
         }
         return nil
     }
 
-    /// Park the fixed-size canvas so the card's top-left sits exactly on the
-    /// status icon's anchor. The size never depends on the content, so nothing
-    /// here moves while the presets row animates.
+    /// Park the fixed-size canvas so the card hangs centered under the
+    /// status icon (like SoNew). The size never depends on the content, so
+    /// nothing here moves while the presets row animates.
     private func positionPanel() {
         if let anchor = statusItemAnchor() { cachedAnchor = anchor }
         guard let fallbackScreen = NSScreen.main ?? NSScreen.screens.first else { return }
         let top = (cachedAnchor?.bottom ?? fallbackScreen.visibleFrame.maxY).rounded()
-        let left = cachedAnchor?.left ?? (fallbackScreen.frame.maxX - PanelMetrics.width)
+        let centerX = cachedAnchor?.centerX ?? (fallbackScreen.frame.maxX - PanelMetrics.width / 2)
         let screen = NSScreen.screens.first {
-            $0.frame.contains(CGPoint(x: left + 1, y: top - 1))
+            $0.frame.contains(CGPoint(x: centerX - 1, y: top - 1))
         } ?? fallbackScreen
-        let cardX = max(screen.frame.minX, min(left, screen.frame.maxX - PanelMetrics.width))
+        let cardX = max(screen.frame.minX,
+                        min(centerX - PanelMetrics.width / 2,
+                            screen.frame.maxX - PanelMetrics.width))
         let height = min(PanelMetrics.canvasHeight, top - screen.frame.minY)
         panel.setFrame(
             NSRect(x: (cardX - PanelMetrics.shadowMargin).rounded(),
