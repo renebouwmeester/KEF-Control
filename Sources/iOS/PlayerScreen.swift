@@ -80,10 +80,15 @@ struct PlayerScreen: View {
         VStack(spacing: 0) {
             if !model.reachable {
                 Spacer()
-                statusView(icon: model.isConfigured ? "wifi.exclamationmark" : "hifispeaker.2",
-                           title: model.isConfigured ? "Speaker unreachable" : "No speaker set",
-                           detail: model.isConfigured ? model.speakerIP
-                                                      : "Open Settings to choose a speaker")
+                if model.presumedAsleep {
+                    statusView(icon: "power", title: "Asleep",
+                               detail: "Eco standby or switched off — reconnects when it returns")
+                } else {
+                    statusView(icon: model.isConfigured ? "wifi.exclamationmark" : "hifispeaker.2",
+                               title: model.isConfigured ? "Speaker unreachable" : "No speaker set",
+                               detail: model.isConfigured ? model.speakerIP
+                                                          : "Open Settings to choose a speaker")
+                }
                 Spacer()
             } else if model.isStandby {
                 Spacer()

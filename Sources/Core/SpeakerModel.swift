@@ -25,6 +25,9 @@ final class SpeakerModel: ObservableObject {
     @Published var artwork: PlatformImage?
     @Published var source = "wifi"
     @Published var reachable = false
+    /// Whether this Mac/phone itself has a network; without one, a silent
+    /// speaker says nothing about the speaker.
+    @Published var networkUp = true
     @Published var isDraggingVolume = false
     @Published var maxVolume = 100   // speaker's volume limit when enabled
     @Published var seek: Double?     // seconds
@@ -544,31 +547,60 @@ final class SpeakerModel: ObservableObject {
     let discovery = SpeakerDiscovery()
     private var discoverySink: AnyCancellable?
 
+    /// The browse is shared with the Settings dialog, which starts and stops
+    /// it on its own schedule; only stop what the model itself started.
+    private var modelOwnsBrowse = false
+
     /// Adopt a discovered speaker automatically, but only when there is exactly
     /// one and the user has not chosen one — picking for them among several
     /// would be guessing at which room they meant.
+    ///
+    /// With a speaker configured the launch browse still matters twice over:
+    /// it is what makes macOS surface the Local Network permission prompt — a
+    /// direct HTTP connect to the saved IP is silently denied until the grant
+    /// exists — and it is how a speaker that moved or sleeps gets found again.
+    /// refresh() stops it on first contact and re-arms it whenever the speaker
+    /// falls silent, so it runs exactly as long as there is something to find.
     private func autoDiscover() {
+        modelOwnsBrowse = true
         discovery.start()
         discoverySink = discovery.$found
             .receive(on: RunLoop.main)
-            .sink { [weak self] list in
-                guard let self, !self.isConfigured, list.count == 1,
-                      let only = list.first else { return }
-                self.setSpeakerIP(only.ip)
-                self.discovery.stop()
-                self.discoverySink = nil
-            }
-        // Already configured: still browse briefly at launch. A Bonjour browse
-        // is what makes macOS surface the Local Network permission prompt — a
-        // direct HTTP connect to the saved IP is silently denied until the grant
-        // exists — so this brings the prompt up on first run instead of leaving
-        // it buried in Settings. A few seconds is enough to trigger it.
-        if isConfigured {
-            Task { [weak self] in
-                try? await Task.sleep(for: .seconds(6))
-                self?.discovery.stop()
-                self?.discoverySink = nil
-            }
+            .sink { [weak self] list in self?.handleDiscovered(list) }
+    }
+
+    /// A found speaker either configures a fresh install (exactly one on the
+    /// network, nothing chosen yet) or reconnects a configured one that fell
+    /// silent — the same speaker waking from Eco standby (which powers the
+    /// network interface down entirely), or coming back on a new DHCP lease.
+    private func handleDiscovered(_ list: [SpeakerDiscovery.Found]) {
+        if !isConfigured {
+            guard list.count == 1, let only = list.first else { return }
+            rememberService(only)
+            setSpeakerIP(only.ip)
+            if modelOwnsBrowse { modelOwnsBrowse = false; discovery.stop() }
+            return
+        }
+        // Note the speaker's Bonjour identity whenever it shows up at the
+        // configured address, so a later address change can be matched to it.
+        if let here = list.first(where: { $0.ip == api.ip }) { rememberService(here) }
+        guard !reachable else { return }
+        let saved = UserDefaults.standard.string(forKey: "SpeakerServiceName")
+        var match = list.first { $0.serviceName == saved }
+        if match == nil { match = list.first { $0.ip == api.ip } }
+        if match == nil, list.count == 1 { match = list.first }
+        guard let match else { return }
+        rememberService(match)
+        if match.ip == api.ip {
+            Task { await refresh() }   // back on the air at the same address
+        } else {
+            setSpeakerIP(match.ip)     // came back with a new DHCP lease
+        }
+    }
+
+    private func rememberService(_ f: SpeakerDiscovery.Found) {
+        if UserDefaults.standard.string(forKey: "SpeakerServiceName") != f.serviceName {
+            UserDefaults.standard.set(f.serviceName, forKey: "SpeakerServiceName")
         }
     }
 
@@ -587,19 +619,23 @@ final class SpeakerModel: ObservableObject {
         pathMonitor = monitor
         var lastInterfaces: String?
         monitor.pathUpdateHandler = { path in
+            let up = path.status == .satisfied
+            Task { @MainActor [weak self] in self?.networkUp = up }
             let signature = path.availableInterfaces.map(\.name).joined(separator: ",")
-                + (path.status == .satisfied ? "+up" : "+down")
+                + (up ? "+up" : "+down")
             guard signature != lastInterfaces else { return }
             lastInterfaces = signature
             Task { @MainActor [weak self] in await self?.reconnect() }
         }
         monitor.start(queue: .global(qos: .utility))
 
+        #if canImport(AppKit)
         wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
             forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
         ) { [weak self] _ in
             Task { @MainActor in await self?.reconnect() }
         }
+        #endif
     }
 
     /// Throw the connections away and go looking again, patiently: Wi-Fi
@@ -645,6 +681,15 @@ final class SpeakerModel: ObservableObject {
 
     var isStandby: Bool { source == "standby" }
     var isPlaying: Bool { playState == "playing" }
+
+    /// A silent speaker at an address that answered before is far more likely
+    /// asleep (Eco standby powers its network interface down) or switched off
+    /// than misconfigured — present it as sleeping, not as an error. Requires
+    /// our own network to be up: without one every speaker is silent.
+    var presumedAsleep: Bool {
+        !reachable && isConfigured && networkUp
+            && UserDefaults.standard.string(forKey: "LastReachedIP") == api.ip
+    }
 
     /// This panel drives one output: the speaker. The `display*` names are
     /// kept so the view reads the same as its full-featured sibling.
@@ -777,6 +822,7 @@ final class SpeakerModel: ObservableObject {
     }
 
     var menuBarIcon: String {
+        if presumedAsleep { return "power" }   // deep sleep reads as standby, not as gone
         if !reachable { return "hifispeaker.2" }
         if isStandby { return "power" }
         if muted { return "speaker.slash.fill" }
@@ -830,8 +876,18 @@ final class SpeakerModel: ObservableObject {
                 volume = vol
             }
             reachable = true
+            // Remember that this address held a real speaker: that is what
+            // separates "asleep or switched off" from "never found" later.
+            if UserDefaults.standard.string(forKey: "LastReachedIP") != api.ip {
+                UserDefaults.standard.set(api.ip, forKey: "LastReachedIP")
+            }
+            if modelOwnsBrowse { modelOwnsBrowse = false; discovery.stop() }
         } catch {
             reachable = false
+            // The speaker fell silent — Eco standby, a power cut, or a new
+            // DHCP lease. Keep the Bonjour browse running so it is re-adopted
+            // the moment it reappears, wherever it reappears.
+            if !discovery.isSearching { modelOwnsBrowse = true; discovery.start() }
             return
         }
 

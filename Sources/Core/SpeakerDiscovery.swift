@@ -44,6 +44,10 @@ final class SpeakerDiscovery: NSObject, ObservableObject, NetServiceBrowserDeleg
 
     func start() {
         guard browser == nil else { return }
+        // A fresh browse re-reports everything that is really there; stale
+        // entries from a previous browse would otherwise block didFind's
+        // dedup when a speaker returns on a different address.
+        found.removeAll()
         isSearching = true
         let b = NetServiceBrowser()
         b.delegate = self

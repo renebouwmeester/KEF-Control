@@ -15,7 +15,7 @@ struct PlayerView: View {
     var body: some View {
         VStack(spacing: 0) {
             if !model.reachable {
-                unreachableView
+                if model.presumedAsleep { asleepView } else { unreachableView }
             } else if model.isStandby {
                 standbyView
             } else {
@@ -110,6 +110,25 @@ struct PlayerView: View {
                 .foregroundStyle(.secondary)
             Text("Standby")
                 .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 20)
+    }
+
+    /// Distinct from unreachableView: this speaker has answered from this
+    /// address before, so it is almost certainly in Eco standby (which powers
+    /// its network down) or switched off — not misconfigured. The model keeps
+    /// browsing, so no button is needed; it reconnects by itself.
+    private var asleepView: some View {
+        VStack(spacing: 6) {
+            Image(systemName: "power")
+                .font(.system(size: 28))
+                .foregroundStyle(.secondary)
+            Text("Asleep")
+                .foregroundStyle(.secondary)
+            Text("Eco standby or switched off —\nreconnects when it returns")
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.tertiary)
         }
         .padding(.vertical, 20)
     }
