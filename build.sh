@@ -12,9 +12,7 @@ trap 'rm -rf "$TMP"' EXIT
 # Sources/Core is platform-neutral (no AppKit/Carbon) so an iOS shell can
 # share it; Sources/macOS is the menu bar shell. One module, so order is free.
 SOURCES=(Sources/Core/*.swift Sources/macOS/*.swift)
-swiftc -O -parse-as-library -target arm64-apple-macos$TARGET_OS "${SOURCES[@]}" -o "$TMP/KEFMenuBar-arm64"
-swiftc -O -parse-as-library -target x86_64-apple-macos$TARGET_OS "${SOURCES[@]}" -o "$TMP/KEFMenuBar-x86_64"
-lipo -create "$TMP/KEFMenuBar-arm64" "$TMP/KEFMenuBar-x86_64" -output "$APP/Contents/MacOS/KEFMenuBar"
+swiftc -O -parse-as-library -target arm64-apple-macos$TARGET_OS "${SOURCES[@]}" -o "$APP/Contents/MacOS/KEFMenuBar"
 cp Info.plist "$APP/Contents/Info.plist"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp bluetooth-glyph.png "$APP/Contents/Resources/bluetooth-glyph.png"  # no SF Symbol exists for Bluetooth
