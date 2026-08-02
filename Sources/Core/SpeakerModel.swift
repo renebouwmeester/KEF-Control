@@ -36,6 +36,9 @@ final class SpeakerModel: ObservableObject {
     @Published var isScrubbing = false
     private var lastSeekCommand = Date.distantPast
     private var lastVolumeCommand = Date.distantPast
+    /// Misses in a row — every third one earns a fresh URLSession, the
+    /// only cure for sockets pooled on a network that died under them.
+    private var failedPolls = 0
     @Published var panelColor = Color(white: 0.13)
     /// Light pastel of the artwork's dominant hue — accent for elements drawn
     /// over the dark tint (the iOS progress line). Nil for mono artwork.
@@ -876,6 +879,7 @@ final class SpeakerModel: ObservableObject {
                 volume = vol
             }
             reachable = true
+            failedPolls = 0
             // Remember that this address held a real speaker: that is what
             // separates "asleep or switched off" from "never found" later.
             if UserDefaults.standard.string(forKey: "LastReachedIP") != api.ip {
@@ -888,6 +892,18 @@ final class SpeakerModel: ObservableObject {
             // DHCP lease. Keep the Bonjour browse running so it is re-adopted
             // the moment it reappears, wherever it reappears.
             if !discovery.isSearching { modelOwnsBrowse = true; discovery.start() }
+            // And bring a fresh client every third miss. Sockets pooled on
+            // a network that died under them never recover — the documented
+            // post-wake wedge — and the wake reconnect only tries for
+            // twenty seconds, which a slow Wi-Fi rejoin outlives. An app
+            // restart cured it because a restart IS a fresh client; now
+            // the poll carries its own cure, for as long as it takes.
+            failedPolls += 1
+            if failedPolls.isMultiple(of: 3) {
+                let ip = api.ip
+                api = KEFAPI(ip: ip)
+                auth = KEFAuthChannel(ip: ip)
+            }
             return
         }
 
