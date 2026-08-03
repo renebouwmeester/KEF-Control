@@ -17,11 +17,6 @@ cp Info.plist "$APP/Contents/Info.plist"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp bluetooth-glyph.png "$APP/Contents/Resources/bluetooth-glyph.png"  # no SF Symbol exists for Bluetooth
 printf 'APPL????' > "$APP/Contents/PkgInfo"
-# macOS 27 beta Local Network wedge: the grant is keyed to the binary's
-# LC_UUID and this Mac's grant DB never hands one to a fresh UUID, so every
-# rebuild would leave the speaker "unreachable". Pin the UUID to the granted
-# one (shared across the suite) before signing. See the menubar-audio memory.
-python3 pin-localnetwork-uuid.py "$APP/Contents/MacOS/KEFMenuBar"
 codesign --force --sign "DA21C246531B79A29C77A59DBE176101EAFA6D8A" "$APP"
 
 echo "Built: $APP ($(lipo -archs "$APP/Contents/MacOS/KEFMenuBar"))"
