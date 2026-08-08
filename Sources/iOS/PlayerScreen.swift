@@ -796,9 +796,9 @@ struct PlayerScreen: View {
     private var powerButton: some View {
         Image(systemName: "power")
             .font(.system(size: 20, weight: .medium))
-            // Deliberately reversed: the power glows when the speaker
-            // sleeps ("wake me"), and recedes while music plays.
-            .foregroundStyle(model.isStandby ? Color.white : Color.white.opacity(0.45))
+            // Like every power LED since the dawn of hifi: lit while the
+            // speaker is on, dark while it sleeps.
+            .foregroundStyle(model.isStandby ? Color.white.opacity(0.45) : Color.white)
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             // Long-press only: standby next to the settings gear was too easy
