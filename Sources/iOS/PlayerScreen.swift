@@ -146,7 +146,10 @@ struct PlayerScreen: View {
             // under touch instead of sitting inert.
             .glassEffect(.regular.interactive())
             .padding(.horizontal, 16)
-            .padding(.bottom, 32)
+            // Spins' altitude: safe area (~34) + 4 — the bars of the
+            // house line up across apps. The volume row rides along via
+            // its fixed gap above the capsule.
+            .padding(.bottom, 38)
         }
         .frame(width: geo.size.width, height: geo.size.height)
         }
@@ -655,7 +658,9 @@ struct PlayerScreen: View {
 
     private var settingsButton: some View {
         Button { openSettings() } label: {
-            Image(systemName: "gearshape.fill")
+            // The outline gear, as SoNew wears it — the filled one sat
+            // heavier than everything around it.
+            Image(systemName: "gearshape")
                 .font(.system(size: 20, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 40, height: 44)
