@@ -32,7 +32,12 @@ struct PlayerView: View {
             VStack(spacing: 12) {
                 if model.reachable && !model.isStandby {
                     metadataView
-                    transportView
+                    // Transport only where the speaker can pass it on:
+                    // Wi-Fi streams natively, Bluetooth relays via AVRCP.
+                    // The wires have no one to obey.
+                    if ["wifi", "bluetooth"].contains(model.source) {
+                        transportView
+                    }
                 }
                 VStack(spacing: 12) {
                     volumeRow
