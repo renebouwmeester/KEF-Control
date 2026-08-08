@@ -120,8 +120,14 @@ struct PlayerScreen: View {
                     // Equal flexible space around the transport centres it
                     // between the format capsule and the volume slider.
                     Spacer(minLength: 16)
-                    transport
-                    Spacer(minLength: 16)
+                    // Transport only where the speaker can pass it on:
+                    // Wi-Fi streams natively, Bluetooth relays through
+                    // AVRCP. Optical, TV and the wires have no one to
+                    // obey — dead buttons come off the screen.
+                    if ["wifi", "bluetooth"].contains(model.source) {
+                        transport
+                        Spacer(minLength: 16)
+                    }
                     volumeRow
                         // Card width: with the number and mute flanking the
                         // slider, this is what lets the TRACK approach the
