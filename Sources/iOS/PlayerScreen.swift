@@ -188,9 +188,10 @@ struct PlayerScreen: View {
                     .foregroundStyle(.tertiary)
             }
         }
-        // 29pt continuous corners — the same radius as the glass capsule,
-        // so card and bar read as one design family.
-        .clipShape(RoundedRectangle(cornerRadius: 29, style: .continuous))
+        // Spotify's artwork rule: 8px corners on large displays of a
+        // cover (4px would be for small ones — KEF only shows it big).
+        // The 29pt capsule-family radius was ours, not the album's.
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .scaleEffect(model.displayedIsPlaying ? 1 : 0.82)
         .shadow(color: .black.opacity(0.4), radius: 18, y: 10)
         .animation(.spring(duration: 0.45, bounce: 0.3), value: model.displayedIsPlaying)
