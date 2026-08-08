@@ -376,6 +376,16 @@ struct PlayerScreen: View {
             .foregroundStyle(volumeGlow ? AnyShapeStyle(.white)
                                         : AnyShapeStyle(.secondary))
             .animation(.easeOut(duration: 0.3), value: volumeGlow)
+            // The number is the presets' front door: one tap summons the
+            // quick row already turned to the volume set — whatever the
+            // row was doing before.
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(.spring(duration: 0.35, bounce: 0.25)) {
+                    quickSetRaw = QuickSet.presets.rawValue
+                    quickRowVisible = true
+                }
+            }
     }
 
     @State private var volumeGlow = false
