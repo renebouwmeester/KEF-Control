@@ -107,9 +107,9 @@ struct PlayerScreen: View {
                     // island's own gap to the screen top.
                     .padding(.top, 10)
                 scrubber
-                    // Inset by one corner radius total — between-the-radii
-                    // read as too trim.
-                    .frame(width: geo.size.width - 32 - 29)
+                    // Between the radii: the bar starts and ends exactly
+                    // where the cover's 8px corners straighten out.
+                    .frame(width: geo.size.width - 32 - 16)
                     .padding(.top, 12)
                 Group {
                     metadata
