@@ -743,9 +743,12 @@ struct PlayerScreen: View {
             .frame(width: 40, height: 44)
             .background {
                 if selected {
-                    Capsule()
+                    // A capsule on a 40×44 button reads as an egg — the
+                    // rounded rect keeps the glass, loses the yolk.
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
                         .fill(.white.opacity(0.12))
-                        .overlay(Capsule().stroke(.white.opacity(0.08), lineWidth: 0.5))
+                        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(.white.opacity(0.08), lineWidth: 0.5))
                         .matchedGeometryEffect(id: "sourceThumb", in: sourceThumb)
                 }
             }
