@@ -69,6 +69,9 @@ struct PlayerScreen: View {
     /// bar — the Mac panel's presets pattern, phone-sized. Persisted: leaving
     /// it open is a choice, not the layout's.
     @AppStorage("QuickRowVisible") private var quickRowVisible = false
+    /// Spins' door grammar for the bottom bar: the translucent bubble
+    /// slides along under the active source.
+    @Namespace private var sourceThumb
 
     private let margin: CGFloat = 24
 
@@ -662,7 +665,7 @@ struct PlayerScreen: View {
             // heavier than everything around it.
             Image(systemName: "gearshape")
                 .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.45))
                 .frame(width: 40, height: 44)
                 .contentShape(Rectangle())
         }
@@ -676,7 +679,7 @@ struct PlayerScreen: View {
             } label: {
                 Image(systemName: "chevron.up")
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.white.opacity(0.45))
                     .frame(width: 28, height: 44)
                     .contentShape(Rectangle())
             }
@@ -723,7 +726,9 @@ struct PlayerScreen: View {
 
     private func sourceButton(_ src: SpeakerModel.Source) -> some View {
         let selected = model.source == src.id
-        return Button { model.setSource(src.id) } label: {
+        return Button {
+            withAnimation(.spring(duration: 0.3, bounce: 0.15)) { model.setSource(src.id) }
+        } label: {
             Group {
                 if let glyph = src.glyph, let img = templateGlyph(named: glyph,
                                                                  size: CGSize(width: 17, height: 20)) {
@@ -733,12 +738,17 @@ struct PlayerScreen: View {
                 }
             }
             .font(.system(size: 20, weight: .medium))
-            .foregroundStyle(selected ? AnyShapeStyle(Color.phoneAccent) : AnyShapeStyle(.secondary))
+            // Spins' grammar: dimmed at rest, white on the bubble.
+            .foregroundStyle(selected ? Color.white : Color.white.opacity(0.45))
             .frame(width: 40, height: 44)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(selected ? Color.phoneAccent.opacity(0.18) : .clear)
-            )
+            .background {
+                if selected {
+                    Capsule()
+                        .fill(.white.opacity(0.12))
+                        .overlay(Capsule().stroke(.white.opacity(0.08), lineWidth: 0.5))
+                        .matchedGeometryEffect(id: "sourceThumb", in: sourceThumb)
+                }
+            }
             .contentShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
@@ -768,7 +778,7 @@ struct PlayerScreen: View {
             // menu's default tint from recolouring it.
             Image(systemName: "slider.horizontal.3")
                 .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.white.opacity(0.45))
                 .frame(width: 40, height: 44)
                 .contentShape(Rectangle())
         }
@@ -783,8 +793,9 @@ struct PlayerScreen: View {
     private var powerButton: some View {
         Image(systemName: "power")
             .font(.system(size: 20, weight: .medium))
-            .foregroundStyle(model.isStandby ? AnyShapeStyle(.secondary)
-                                             : AnyShapeStyle(Color.phoneAccent))
+            // Deliberately reversed: the power glows when the speaker
+            // sleeps ("wake me"), and recedes while music plays.
+            .foregroundStyle(model.isStandby ? Color.white : Color.white.opacity(0.45))
             .frame(width: 44, height: 44)
             .contentShape(Rectangle())
             // Long-press only: standby next to the settings gear was too easy
