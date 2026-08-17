@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Build KEF Control.app into ~/Applications (speaker-only; no bridges) (universal, macOS 26+)
+# Build KEF Control.app into /Applications (speaker-only; no bridges) (universal, macOS 26+)
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP="$HOME/Applications/KEF Control.app"
+APP="/Applications/KEF Control.app"
 TARGET_OS=26.0
 
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
