@@ -1,0 +1,28 @@
+[
+  {
+    "id": "cinema-on",
+    "execute-command": "/Users/rene/Documents/Apps/kef-control-menubar/dylan-scenes/cinema-on.sh",
+    "command-working-directory": "/Users/rene/Documents/Apps/kef-control-menubar/dylan-scenes",
+    "response-message": "cinema-on fired",
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "REPLACE_WITH_A_SHARED_SECRET",
+        "parameter": { "source": "header", "name": "X-Baton-Token" }
+      }
+    }
+  },
+  {
+    "id": "cinema-off",
+    "execute-command": "/Users/rene/Documents/Apps/kef-control-menubar/dylan-scenes/cinema-off.sh",
+    "command-working-directory": "/Users/rene/Documents/Apps/kef-control-menubar/dylan-scenes",
+    "response-message": "cinema-off fired",
+    "trigger-rule": {
+      "match": {
+        "type": "value",
+        "value": "REPLACE_WITH_A_SHARED_SECRET",
+        "parameter": { "source": "header", "name": "X-Baton-Token" }
+      }
+    }
+  }
+]
