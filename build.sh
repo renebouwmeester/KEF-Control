@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build KEF Control.app into /Applications (speaker-only; no bridges) (universal, macOS 26+)
+# Build KEF Control.app into /Applications (speaker-only; no bridges) (macOS 26+)
+# arm64 by default (every Mac in the house is one); release.sh sets ARCHS="arm64 x86_64" for a universal build.
 set -euo pipefail
 cd "$(dirname "$0")"
 
@@ -12,11 +13,18 @@ trap 'rm -rf "$TMP"' EXIT
 # Sources/Core is platform-neutral (no AppKit/Carbon) so an iOS shell can
 # share it; Sources/macOS is the menu bar shell. One module, so order is free.
 SOURCES=(Sources/Core/*.swift Sources/macOS/*.swift)
-swiftc -O -parse-as-library -target arm64-apple-macos$TARGET_OS "${SOURCES[@]}" -o "$APP/Contents/MacOS/KEFMenuBar"
+DELEN=()
+for ARCH in ${ARCHS:-arm64}; do
+  swiftc -O -parse-as-library -target $ARCH-apple-macos$TARGET_OS "${SOURCES[@]}" -o "$TMP/KEFMenuBar-$ARCH"
+  DELEN+=("$TMP/KEFMenuBar-$ARCH")
+done
+lipo -create "${DELEN[@]}" -output "$APP/Contents/MacOS/KEFMenuBar"
 cp Info.plist "$APP/Contents/Info.plist"
 cp AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 cp bluetooth-glyph.png "$APP/Contents/Resources/bluetooth-glyph.png"  # no SF Symbol exists for Bluetooth
 printf 'APPL????' > "$APP/Contents/PkgInfo"
-codesign --force --sign "DA21C246531B79A29C77A59DBE176101EAFA6D8A" "$APP"
+# Developer ID + hardened runtime + secure timestamp, so release.sh can notarize it (since v1.2; before that the
+# app was ad-hoc signed and downloads needed an xattr to get past Gatekeeper).
+codesign --force --options runtime --timestamp --sign "Developer ID Application" "$APP"
 
 echo "Built: $APP ($(lipo -archs "$APP/Contents/MacOS/KEFMenuBar"))"

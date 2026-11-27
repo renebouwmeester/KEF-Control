@@ -8,16 +8,21 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-APP="$HOME/Applications/KEF Control.app"
+APP="/Applications/KEF Control.app"
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" Info.plist)
 
-./build.sh
+ARCHS="arm64 x86_64" ./build.sh
 
 mkdir -p dist
 OUT="dist/KEF-Control-$VERSION.zip"
 rm -f "$OUT" "$OUT.sha256"
 
+# Notarize and staple (keychain profile "arco-notary", shared with Arco), then zip the stapled app.
 # ditto, not zip: plain zip mangles bundle symlinks and breaks the signature.
+NOTA="$(mktemp -d)/notarize.zip"
+ditto -c -k --keepParent "$APP" "$NOTA"
+xcrun notarytool submit "$NOTA" --keychain-profile arco-notary --wait
+xcrun stapler staple "$APP"
 ditto -c -k --keepParent "$APP" "$OUT"
 shasum -a 256 "$OUT" | tee "$OUT.sha256"
 
@@ -28,6 +33,7 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT
 ditto -x -k "$OUT" "$TMP"
 codesign --verify --deep --strict "$TMP/KEF Control.app" \
   && echo "  signature OK after unzip"
+spctl --assess --type execute "$TMP/KEF Control.app" && echo "  Gatekeeper: accepted (notarized)"
 /usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" \
   "$TMP/KEF Control.app/Contents/Info.plist" | sed 's/^/  version /'
 lipo -archs "$TMP/KEF Control.app/Contents/MacOS/KEFMenuBar" | sed 's/^/  archs /'
@@ -38,7 +44,5 @@ Next: create a GitHub Release and attach the zip.
   gh release create v$VERSION "$OUT" --title "v$VERSION" --notes "…"
 or use the web UI: Releases -> Draft a new release.
 
-Note the app is ad-hoc signed, not notarized, so anyone downloading it must run
-  xattr -dr com.apple.quarantine "/Applications/KEF Control.app"
-(the README says so too).
+The app is Developer ID signed and notarized: no quarantine workaround needed.
 EOF

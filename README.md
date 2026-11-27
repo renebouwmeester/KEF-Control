@@ -42,21 +42,16 @@ work; reports welcome.
 Grab the latest zip from [Releases](../../releases), unzip it, and drag
 **KEF Control.app** to `/Applications`.
 
-The app is ad-hoc signed but **not notarized** (that needs a paid Apple
-Developer account), so macOS quarantines it on download and claims it is
-"damaged". It isn't — clear the flag once:
+Since v1.2 the app is signed with a Developer ID and notarized by Apple, so it
+opens normally on first launch — no quarantine workaround needed. It runs on
+macOS 26 or later, on Apple silicon and Intel.
 
-```sh
-xattr -dr com.apple.quarantine "/Applications/KEF Control.app"
-```
-
-Then open it normally. Each release lists a SHA-256 you can check with
+Each release lists a SHA-256 you can check with
 `shasum -a 256 KEF-Control-<version>.zip`.
 
 ### Or build from source
 
-A minute's work, and it sidesteps the quarantine entirely — locally built
-binaries are never quarantined:
+A minute's work:
 
 ```sh
 git clone https://github.com/renebouwmeester/KEF-Control.git
