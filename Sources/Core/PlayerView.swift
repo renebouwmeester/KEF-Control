@@ -19,8 +19,14 @@ struct PlayerView: View {
             } else if model.isStandby {
                 standbyView
             } else {
-                artworkView
-                progressBar
+                // The wired inputs (Aux/analog, USB, optical, coaxial, TV) carry
+                // no artwork: an empty placeholder square there is just a big
+                // grey note (issue #1). Show the square only where art can come
+                // — Wi-Fi and Bluetooth — or when some source did send art.
+                if model.artwork != nil || ["wifi", "bluetooth"].contains(model.source) {
+                    artworkView
+                    progressBar
+                }
                 // Timestamps + format badge, like the iOS app; hidden with
                 // the progress info when the source reports no duration.
                 if model.displayLength != nil {
